@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Performance Dashboard Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeInDown 1s ease-out;
+        }
+        
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            color: #333;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transition: all 0.4s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            background: white;
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #2c3e50;
+        }
+        
+        .card-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .card-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+        
+        .card-features li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #555;
+        }
+        
+        .card-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .card-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .card-button:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .stats-overview {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            padding: 20px;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .insights-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        
+        .insights-title {
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .insight-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .insight-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .insight-text {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            opacity: 0.8;
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 1s ease-out 0.5s both;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Employee Performance Dashboard Hub</h1>
+        <p>Choose Your Preferred Dashboard Experience</p>
+        <p>Generated: <span id="currentDate"></span></p>
+    </div>
+
+    <div class="container">
+        <!-- Quick Stats Overview -->
+        <div class="stats-overview fade-in-up">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">1,440</div>
+                    <div class="stat-label">Total Actions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Team Members</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">2.0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">Harish</div>
+                    <div class="stat-label">Top Performer</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Options -->
+        <div class="dashboard-grid">
+            <!-- Interactive Charts Dashboard -->
+            <div class="dashboard-card" onclick="window.open('interactive_charts_dashboard.html', '_blank')">
+                <div class="card-icon">🎯</div>
+                <div class="card-title">Interactive Charts Dashboard</div>
+                <div class="card-description">
+                    Advanced dashboard with 10+ interactive chart types including 3D bars, animated pies, radar charts, and bubble plots.
+                </div>
+                <ul class="card-features">
+                    <li>10+ Different Chart Types</li>
+                    <li>Interactive Animations</li>
+                    <li>Filter Controls</li>
+                    <li>Employee Comparison</li>
+                    <li>Real-time Hover Effects</li>
+                </ul>
+                <a href="interactive_charts_dashboard.html" class="card-button">🚀 Launch Interactive Dashboard</a>
+            </div>
+
+            <!-- Comprehensive Charts -->
+            <div class="dashboard-card" onclick="window.open('charts_dashboard.html', '_blank')">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Comprehensive Charts Collection</div>
+                <div class="card-description">
+                    Full collection of professional charts including bar, pie, line, doughnut, radar, polar, and stacked visualizations.
+                </div>
+                <ul class="card-features">
+                    <li>Professional Chart Library</li>
+                    <li>Multiple Visualization Types</li>
+                    <li>Performance Insights</li>
+                    <li>Team Statistics</li>
+                    <li>Color-coded Analysis</li>
+                </ul>
+                <a href="charts_dashboard.html" class="card-button">📈 View All Charts</a>
+            </div>
+
+            <!-- Simple Dashboard -->
+            <div class="dashboard-card" onclick="window.open('simple_dashboard.html', '_blank')">
+                <div class="card-icon">⚡</div>
+                <div class="card-title">Simple Performance Dashboard</div>
+                <div class="card-description">
+                    Clean, fast-loading dashboard with essential metrics and visual bar charts. Perfect for quick reviews.
+                </div>
+                <ul class="card-features">
+                    <li>Fast Loading</li>
+                    <li>Essential Metrics</li>
+                    <li>Clean Design</li>
+                    <li>Mobile Friendly</li>
+                    <li>Easy to Share</li>
+                </ul>
+                <a href="simple_dashboard.html" class="card-button">⚡ Quick View</a>
+            </div>
+
+            <!-- Standalone Dashboard -->
+            <div class="dashboard-card" onclick="window.open('dashboard_standalone.html', '_blank')">
+                <div class="card-icon">📱</div>
+                <div class="card-title">Standalone Dashboard</div>
+                <div class="card-description">
+                    Self-contained dashboard that works offline. Perfect for sharing via email or storing locally.
+                </div>
+                <ul class="card-features">
+                    <li>Works Offline</li>
+                    <li>Self-contained File</li>
+                    <li>Email Friendly</li>
+                    <li>No Dependencies</li>
+                    <li>Instant Access</li>
+                </ul>
+                <a href="dashboard_standalone.html" class="card-button">📱 Standalone Version</a>
+            </div>
+
+            <!-- Original Interactive -->
+            <div class="dashboard-card" onclick="window.open('index.html', '_blank')">
+                <div class="card-icon">🔧</div>
+                <div class="card-title">Original Interactive Dashboard</div>
+                <div class="card-description">
+                    Feature-rich dashboard with modular JavaScript components and detailed performance analysis.
+                </div>
+                <ul class="card-features">
+                    <li>Modular Components</li>
+                    <li>Detailed Analysis</li>
+                    <li>Interactive Features</li>
+                    <li>Professional Layout</li>
+                    <li>Comprehensive Data</li>
+                </ul>
+                <a href="index.html" class="card-button">🔧 Original Dashboard</a>
+            </div>
+
+            <!-- Power BI Template -->
+            <div class="dashboard-card" onclick="alert('Power BI instructions available in PowerBI_Template_Instructions.md')">
+                <div class="card-icon">💼</div>
+                <div class="card-title">Power BI Template</div>
+                <div class="card-description">
+                    Professional Power BI template with setup instructions for enterprise-level reporting and analysis.
+                </div>
+                <ul class="card-features">
+                    <li>Enterprise Ready</li>
+                    <li>Power BI Integration</li>
+                    <li>Setup Instructions</li>
+                    <li>Professional Reports</li>
+                    <li>Data Refresh Support</li>
+                </ul>
+                <a href="PowerBI_Template_Instructions.md" class="card-button">💼 Power BI Setup</a>
+            </div>
+        </div>
+
+        <!-- Key Insights -->
+        <div class="insights-section">
+            <div class="insights-title">🔍 Key Performance Insights</div>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-title">🏆 Top Performer</div>
+                    <div class="insight-text">
+                        Harish Sahare leads with 362 total actions and 5.0% success rate, significantly outperforming the team average.
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-title">📊 Performance Gap</div>
+                    <div class="insight-text">
+                        25.7% difference between top and bottom performers indicates opportunities for mentoring and skill transfer.
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-title">🎯 Conversion Focus</div>
+                    <div class="insight-text">
+                        Team success rate of 2.0% shows significant room for improvement in closing techniques and conversion strategies.
+                    </div>
+                </div>
+                
+                <div class="insight-card">
+                    <div class="insight-title">💼 Activity Analysis</div>
+                    <div class="insight-text">
+                        Comments represent 79.2% of all activities, indicating strong engagement but need for outcome optimization.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2024 Employee Performance Dashboard | Choose any dashboard above to begin analysis</p>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+        
+        // Add click handlers for cards
+        document.querySelectorAll('.dashboard-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

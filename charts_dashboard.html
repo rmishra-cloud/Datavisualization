@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Performance Charts Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            padding: 30px 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 15px;
+        }
+        
+        .chart-container.small {
+            height: 300px;
+        }
+        
+        .chart-container.large {
+            height: 500px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .insights-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .insights-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .insight-item {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        .legend-custom {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+        
+        .performance-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .high { background-color: #27ae60; }
+        .medium { background-color: #f39c12; }
+        .low { background-color: #e74c3c; }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Employee Performance Charts Dashboard</h1>
+        <p>Comprehensive Visual Analysis with Multiple Chart Types</p>
+        <p>Generated: <span id="currentDate"></span></p>
+    </div>
+
+    <div class="container">
+        <!-- Key Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">1,440</div>
+                <div class="stat-label">Total Actions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">288</div>
+                <div class="stat-label">Average Actions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">2.0%</div>
+                <div class="stat-label">Team Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">29</div>
+                <div class="stat-label">Total Conversions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">5</div>
+                <div class="stat-label">Team Size</div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Bar Chart - Total Actions -->
+            <div class="chart-card">
+                <div class="chart-title">📊 Total Actions Comparison</div>
+                <div class="chart-container">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Pie Chart - Action Distribution -->
+            <div class="chart-card">
+                <div class="chart-title">🥧 Action Type Distribution</div>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Line Chart - Performance Trend -->
+            <div class="chart-card">
+                <div class="chart-title">📈 Performance Trend Analysis</div>
+                <div class="chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Doughnut Chart - Success Rates -->
+            <div class="chart-card">
+                <div class="chart-title">🍩 Success Rate Breakdown</div>
+                <div class="chart-container">
+                    <canvas id="doughnutChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Horizontal Bar Chart - Comments Activity -->
+            <div class="chart-card">
+                <div class="chart-title">📝 Comments Activity Ranking</div>
+                <div class="chart-container">
+                    <canvas id="horizontalBarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Radar Chart - Multi-metric Performance -->
+            <div class="chart-card">
+                <div class="chart-title">🎯 Multi-Metric Performance Radar</div>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Polar Area Chart - Deposit Performance -->
+            <div class="chart-card">
+                <div class="chart-title">⭕ Deposit Performance Distribution</div>
+                <div class="chart-container">
+                    <canvas id="polarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Stacked Bar Chart - Activity Breakdown -->
+            <div class="chart-card">
+                <div class="chart-title">📚 Activity Type Breakdown</div>
+                <div class="chart-container">
+                    <canvas id="stackedBarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Bubble Chart - Performance vs Efficiency -->
+            <div class="chart-card">
+                <div class="chart-title">💫 Performance vs Efficiency Matrix</div>
+                <div class="chart-container">
+                    <canvas id="bubbleChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Area Chart - Cumulative Performance -->
+            <div class="chart-card">
+                <div class="chart-title">🏔️ Cumulative Performance Area</div>
+                <div class="chart-container">
+                    <canvas id="areaChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Insights -->
+        <div class="insights-section">
+            <div class="insights-title">🔍 Key Performance Insights</div>
+            
+            <div class="insight-item">
+                <strong>🏆 Top Performer:</strong> 
+                Harish Sahare leads with <span class="performance-indicator high">362 actions</span> 
+                and <span class="performance-indicator high">5.0% success rate</span>
+            </div>
+            
+            <div class="insight-item">
+                <strong>📊 Performance Distribution:</strong> 
+                25.7% gap between top performer and team average, indicating potential for improvement through mentoring
+            </div>
+            
+            <div class="insight-item">
+                <strong>🎯 Conversion Focus:</strong> 
+                Team success rate of <span class="performance-indicator medium">2.0%</span> shows room for improvement in closing techniques
+            </div>
+            
+            <div class="insight-item">
+                <strong>💼 Activity Analysis:</strong> 
+                Comments dominate at 79.2% of all activities, suggesting strong engagement but need for conversion optimization
+            </div>
+            
+            <div class="insight-item">
+                <strong>🚀 Growth Opportunity:</strong> 
+                Ashlesha Nandankar shows <span class="performance-indicator low">lowest activity</span> 
+                but has potential with proper support and training
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+
+        // Employee data
+        const employees = ['Harish Sahare', 'Arun Ghule', 'Irshaad Sheikh', 'Rishabh Dabruse', 'Ashlesha Nandankar'];
+        const totalActions = [362, 296, 293, 255, 234];
+        const comments = [238, 232, 212, 217, 191];
+        const deposits = [5, 1, 3, 6, 1];
+        const casesClosed = [13, 0, 0, 0, 0];
+        const successRates = [5.0, 0.3, 1.0, 2.4, 0.4];
+
+        // Color schemes
+        const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'];
+        const backgroundColors = colors.map(color => color + '80');
+
+        // Chart configurations
+        const defaultOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        };
+
+        // 1. Bar Chart - Total Actions
+        new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: employees,
+                datasets: [{
+                    label: 'Total Actions',
+                    data: totalActions,
+                    backgroundColor: backgroundColors,
+                    borderColor: colors,
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                plugins: {
+                    ...defaultOptions.plugins,
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: (value) => value,
+                        font: { weight: 'bold' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0f0f0' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // 2. Pie Chart - Action Distribution
+        const totalComments = comments.reduce((a, b) => a + b, 0);
+        const totalDeposits = deposits.reduce((a, b) => a + b, 0);
+        const totalClosed = casesClosed.reduce((a, b) => a + b, 0);
+        const totalOther = 1440 - totalComments - totalDeposits - totalClosed;
+
+        new Chart(document.getElementById('pieChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Comments', 'Deposits', 'Cases Closed', 'Other Activities'],
+                datasets: [{
+                    data: [totalComments, totalDeposits, totalClosed, totalOther],
+                    backgroundColor: ['#3498db', '#2ecc71', '#e74c3c', '#f39c12'],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                plugins: {
+                    ...defaultOptions.plugins,
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / sum) * 100).toFixed(1);
+                            return percentage + '%';
+                        },
+                        color: '#fff',
+                        font: { weight: 'bold', size: 12 }
+                    }
+                }
+            }
+        });
+
+        // 3. Line Chart - Performance Trend
+        new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: {
+                labels: employees,
+                datasets: [{
+                    label: 'Total Actions',
+                    data: totalActions,
+                    borderColor: '#3498db',
+                    backgroundColor: '#3498db20',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 8,
+                    pointHoverRadius: 12
+                }, {
+                    label: 'Success Rate (%)',
+                    data: successRates.map(rate => rate * 20), // Scale for visibility
+                    borderColor: '#e74c3c',
+                    backgroundColor: '#e74c3c20',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 8,
+                    pointHoverRadius: 12,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: { display: true, text: 'Total Actions' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Success Rate (scaled)' },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+
+        // 4. Doughnut Chart - Success Rates
+        new Chart(document.getElementById('doughnutChart'), {
+            type: 'doughnut',
+            data: {
+                labels: employees,
+                datasets: [{
+                    data: successRates,
+                    backgroundColor: backgroundColors,
+                    borderColor: colors,
+                    borderWidth: 3,
+                    cutout: '60%'
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                plugins: {
+                    ...defaultOptions.plugins,
+                    datalabels: {
+                        formatter: (value) => value + '%',
+                        color: '#fff',
+                        font: { weight: 'bold' }
+                    }
+                }
+            }
+        });
+
+        // 5. Horizontal Bar Chart - Comments
+        new Chart(document.getElementById('horizontalBarChart'), {
+            type: 'bar',
+            data: {
+                labels: employees,
+                datasets: [{
+                    label: 'Comments',
+                    data: comments,
+                    backgroundColor: backgroundColors,
+                    borderColor: colors,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true }
+                }
+            }
+        });
+
+        // 6. Radar Chart - Multi-metric Performance
+        new Chart(document.getElementById('radarChart'), {
+            type: 'radar',
+            data: {
+                labels: ['Total Actions', 'Comments', 'Deposits', 'Success Rate', 'Cases Closed'],
+                datasets: employees.map((emp, idx) => ({
+                    label: emp,
+                    data: [
+                        totalActions[idx] / 4, // Scale down
+                        comments[idx] / 3,     // Scale down
+                        deposits[idx] * 20,    // Scale up
+                        successRates[idx] * 10, // Scale up
+                        casesClosed[idx] * 5   // Scale up
+                    ],
+                    backgroundColor: backgroundColors[idx],
+                    borderColor: colors[idx],
+                    borderWidth: 2,
+                    pointRadius: 4
+                }))
+            },
+            options: {
+                ...defaultOptions,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // 7. Polar Area Chart - Deposits
+        new Chart(document.getElementById('polarChart'), {
+            type: 'polarArea',
+            data: {
+                labels: employees,
+                datasets: [{
+                    data: deposits,
+                    backgroundColor: backgroundColors,
+                    borderColor: colors,
+                    borderWidth: 2
+                }]
+            },
+            options: defaultOptions
+        });
+
+        // 8. Stacked Bar Chart - Activity Breakdown
+        new Chart(document.getElementById('stackedBarChart'), {
+            type: 'bar',
+            data: {
+                labels: employees,
+                datasets: [{
+                    label: 'Comments',
+                    data: comments,
+                    backgroundColor: '#3498db80',
+                    borderColor: '#3498db',
+                    borderWidth: 1
+                }, {
+                    label: 'Deposits',
+                    data: deposits,
+                    backgroundColor: '#2ecc7180',
+                    borderColor: '#2ecc71',
+                    borderWidth: 1
+                }, {
+                    label: 'Cases Closed',
+                    data: casesClosed,
+                    backgroundColor: '#e74c3c80',
+                    borderColor: '#e74c3c',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                }
+            }
+        });
+
+        // 9. Bubble Chart - Performance vs Efficiency
+        new Chart(document.getElementById('bubbleChart'), {
+            type: 'bubble',
+            data: {
+                datasets: [{
+                    label: 'Employees',
+                    data: employees.map((emp, idx) => ({
+                        x: totalActions[idx],
+                        y: successRates[idx],
+                        r: comments[idx] / 10, // Bubble size based on comments
+                        employee: emp
+                    })),
+                    backgroundColor: backgroundColors,
+                    borderColor: colors,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Total Actions' },
+                        beginAtZero: true
+                    },
+                    y: {
+                        title: { display: true, text: 'Success Rate (%)' },
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const point = context.parsed;
+                                const data = context.raw;
+                                return `${data.employee}: Actions: ${point.x}, Success: ${point.y}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 10. Area Chart - Cumulative Performance
+        new Chart(document.getElementById('areaChart'), {
+            type: 'line',
+            data: {
+                labels: employees,
+                datasets: [{
+                    label: 'Cumulative Actions',
+                    data: totalActions.reduce((acc, curr, idx) => {
+                        acc.push((acc[idx - 1] || 0) + curr);
+                        return acc;
+                    }, []),
+                    backgroundColor: 'rgba(52, 152, 219, 0.3)',
+                    borderColor: '#3498db',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                ...defaultOptions,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
