@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Real-Time Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        :root {
+            --primary-color: #00d4ff;
+            --secondary-color: #ff6b6b;
+            --success-color: #00ff88;
+            --warning-color: #ffb347;
+            --bg-dark: #0a0e27;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            background: linear-gradient(45deg, var(--primary-color), var(--success-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        .status-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online { background: var(--success-color); }
+        .status-dot.warning { background: var(--warning-color); }
+        .status-dot.error { background: var(--secondary-color); }
+
+        /* Main container */
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Real-time metrics grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .metric-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .metric-value {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, var(--primary-color), #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .metric-change {
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 15px;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .change-positive { background: rgba(0, 255, 136, 0.2); color: var(--success-color); }
+        .change-negative { background: rgba(255, 107, 107, 0.2); color: var(--secondary-color); }
+        .change-neutral { background: rgba(255, 179, 71, 0.2); color: var(--warning-color); }
+
+        /* Control panel */
+        .control-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 40px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .control-btn {
+            background: linear-gradient(45deg, var(--primary-color), #0099cc);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(45deg, var(--success-color), #00cc66);
+        }
+
+        .control-btn.danger {
+            background: linear-gradient(45deg, var(--secondary-color), #cc4444);
+        }
+
+        /* Charts container */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chart-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .chart-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        /* Activity feed */
+        .activity-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .activity-feed, .leaderboard {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border-left: 3px solid var(--primary-color);
+            animation: slideInRight 0.5s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .activity-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary-color), var(--success-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Leaderboard */
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .leaderboard-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary-color);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .leaderboard-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .rank-badge {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .rank-1 { background: linear-gradient(45deg, #ffd700, #ffed4e); color: #000; }
+        .rank-2 { background: linear-gradient(45deg, #c0c0c0, #e8e8e8); color: #000; }
+        .rank-3 { background: linear-gradient(45deg, #cd7f32, #daa520); color: #fff; }
+        .rank-other { background: rgba(255, 255, 255, 0.2); }
+
+        .employee-info {
+            flex: 1;
+        }
+
+        .employee-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .employee-stats {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-indicator {
+            width: 80px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            border-radius: 3px;
+            transition: width 1s ease-in-out;
+        }
+
+        /* Notifications */
+        .notifications {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 350px;
+        }
+
+        .notification {
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            animation: slideInRight 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notification::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-color);
+        }
+
+        .notification.success::before { background: var(--success-color); }
+        .notification.warning::before { background: var(--warning-color); }
+        .notification.error::before { background: var(--secondary-color); }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            opacity: 0.7;
+        }
+
+        .notification-close:hover {
+            opacity: 1;
+        }
+
+        /* Animations */
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2) drop-shadow(0 0 10px currentColor); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .activity-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .notifications {
+                width: calc(100% - 40px);
+                right: 20px;
+            }
+            
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>🚀 Advanced Real-Time Dashboard</h1>
+        <div class="status-indicators">
+            <div class="status-item">
+                <div class="status-dot online"></div>
+                <span>WebSocket Connected</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot online"></div>
+                <span>Real-Time Active</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot warning"></div>
+                <span>5 Users Online</span>
+            </div>
+            <div class="status-item">
+                <span id="currentTime">--:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="notifications" id="notifications"></div>
+
+    <div class="container">
+        <!-- Real-time Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">📊</div>
+                <div class="metric-value" id="totalActions">1,440</div>
+                <div class="metric-label">Total Actions</div>
+                <div class="metric-change change-positive" id="actionsChange">+15 this hour</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-value" id="actionsPerMin">12</div>
+                <div class="metric-label">Actions/Min</div>
+                <div class="metric-change change-positive" id="rateChange">+2.1 avg</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">🎯</div>
+                <div class="metric-value" id="successRate">2.1%</div>
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-change change-positive" id="successChange">+0.3% today</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">👥</div>
+                <div class="metric-value" id="activeUsers">5</div>
+                <div class="metric-label">Active Users</div>
+                <div class="metric-change change-neutral" id="usersChange">stable</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">💰</div>
+                <div class="metric-value" id="totalRevenue">$24.5K</div>
+                <div class="metric-label">Revenue Today</div>
+                <div class="metric-change change-positive" id="revenueChange">+$1.2K</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-icon">🔥</div>
+                <div class="metric-value" id="streakCount">7</div>
+                <div class="metric-label">Day Streak</div>
+                <div class="metric-change change-positive" id="streakChange">best this month</div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-grid">
+                <div class="control-group">
+                    <div class="control-label">Real-Time Mode</div>
+                    <button class="control-btn active" id="realtimeToggle" onclick="toggleRealTime()">
+                        🔴 LIVE
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">Update Frequency</div>
+                    <button class="control-btn" id="frequencyBtn" onclick="changeFrequency()">
+                        ⚡ 2 seconds
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">Data Source</div>
+                    <button class="control-btn" id="sourceBtn" onclick="changeSource()">
+                        🌐 WebSocket
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">Notifications</div>
+                    <button class="control-btn active" id="notifBtn" onclick="toggleNotifications()">
+                        🔔 ON
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">Performance Mode</div>
+                    <button class="control-btn" id="perfBtn" onclick="togglePerformanceMode()">
+                        🚀 Standard
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">Reset Data</div>
+                    <button class="control-btn danger" onclick="resetDashboard()">
+                        🔄 RESET
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-container">
+            <!-- Real-time Performance Stream -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        📈 Live Performance Stream
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn" onclick="toggleChartAnimation('performance')">Animate</button>
+                        <button class="chart-btn" onclick="exportChart('performance')">Export</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Activity Distribution -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        🥧 Activity Distribution
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn" onclick="toggleChartAnimation('distribution')">3D View</button>
+                        <button class="chart-btn" onclick="exportChart('distribution')">Export</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Success Rate Trends -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        📊 Success Rate Trends
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn" onclick="toggleChartAnimation('trends')">Smooth</button>
+                        <button class="chart-btn" onclick="exportChart('trends')">Export</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Employee Performance Radar -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        🎯 Employee Performance Radar
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn" onclick="toggleChartAnimation('radar')">Rotate</button>
+                        <button class="chart-btn" onclick="exportChart('radar')">Export</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Feed and Leaderboard -->
+        <div class="activity-section">
+            <div class="activity-feed">
+                <div class="section-title">
+                    🔄 Live Activity Feed
+                </div>
+                <div id="activityFeed">
+                    <!-- Activities will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div class="leaderboard">
+                <div class="section-title">
+                    🏆 Live Leaderboard
+                </div>
+                <div id="leaderboard">
+                    <!-- Leaderboard will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let dashboardState = {
+            isRealTime: true,
+            updateFrequency: 2000,
+            notificationsEnabled: true,
+            performanceMode: 'standard',
+            dataSource: 'websocket',
+            charts: {},
+            employees: [
+                { id: 1, name: 'Harish Sahare', actions: 362, success: 5.0, active: true, avatar: 'HS' },
+                { id: 2, name: 'Arun Ghule', actions: 296, success: 0.3, active: true, avatar: 'AG' },
+                { id: 3, name: 'Irshaad Sheikh', actions: 293, success: 1.0, active: false, avatar: 'IS' },
+                { id: 4, name: 'Rishabh Dabruse', actions: 255, success: 2.4, active: true, avatar: 'RD' },
+                { id: 5, name: 'Ashlesha Nandankar', actions: 234, success: 0.4, active: true, avatar: 'AN' }
+            ],
+            realtimeData: {
+                timestamps: [],
+                actions: [],
+                successRates: [],
+                activities: []
+            }
+        };
+
+        // Initialize dashboard
+        function initDashboard() {
+            createParticles();
+            initCharts();
+            startRealTimeUpdates();
+            updateClock();
+            generateInitialData();
+            showWelcomeNotification();
+            
+            console.log('🚀 Advanced Real-Time Dashboard initialized');
+        }
+
+        // Create animated background particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (3 + Math.random() * 6) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Initialize all charts
+        function initCharts() {
+            createPerformanceChart();
+            createDistributionChart();
+            createTrendsChart();
+            createRadarChart();
+        }
+
+        // Performance stream chart
+        function createPerformanceChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(0, 212, 255, 0.8)');
+            gradient.addColorStop(1, 'rgba(0, 212, 255, 0.1)');
+            
+            dashboardState.charts.performance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Actions per Minute',
+                        data: [],
+                        borderColor: '#00d4ff',
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 10,
+                        pointBackgroundColor: '#00d4ff',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            beginAtZero: true
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutCubic'
+                    }
+                }
+            });
+        }
+
+        // Distribution pie chart
+        function createDistributionChart() {
+            const ctx = document.getElementById('distributionChart').getContext('2d');
+            
+            dashboardState.charts.distribution = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Comments', 'Deposits', 'Cases Closed', 'Stage Changes', 'Other'],
+                    datasets: [{
+                        data: [1141, 16, 13, 45, 225],
+                        backgroundColor: [
+                            '#00d4ff',
+                            '#00ff88',
+                            '#ff6b6b',
+                            '#ffb347',
+                            '#9b59b6'
+                        ],
+                        borderWidth: 3,
+                        borderColor: '#0a0e27',
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { 
+                                color: '#ffffff',
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 2000
+                    }
+                }
+            });
+        }
+
+        // Success trends chart
+        function createTrendsChart() {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            
+            dashboardState.charts.trends = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: dashboardState.employees.slice(0, 3).map((emp, idx) => ({
+                        label: emp.name,
+                        data: [],
+                        borderColor: ['#00d4ff', '#00ff88', '#ff6b6b'][idx],
+                        backgroundColor: ['rgba(0,212,255,0.1)', 'rgba(0,255,136,0.1)', 'rgba(255,107,107,0.1)'][idx],
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 8
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            beginAtZero: true
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Radar chart
+        function createRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            dashboardState.charts.radar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Actions', 'Success Rate', 'Consistency', 'Speed', 'Quality'],
+                    datasets: dashboardState.employees.slice(0, 3).map((emp, idx) => ({
+                        label: emp.name,
+                        data: [
+                            emp.actions / 5,
+                            emp.success * 10,
+                            Math.random() * 100,
+                            Math.random() * 100,
+                            Math.random() * 100
+                        ],
+                        backgroundColor: ['rgba(0,212,255,0.2)', 'rgba(0,255,136,0.2)', 'rgba(255,107,107,0.2)'][idx],
+                        borderColor: ['#00d4ff', '#00ff88', '#ff6b6b'][idx],
+                        borderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 10
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: '#ffffff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                            pointLabels: { color: '#ffffff' }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeInOutElastic'
+                    }
+                }
+            });
+        }
+
+        // Start real-time updates
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                if (dashboardState.isRealTime) {
+                    simulateRealTimeData();
+                    updateCharts();
+                    updateMetrics();
+                    updateActivityFeed();
+                    updateLeaderboard();
+                }
+            }, dashboardState.updateFrequency);
+        }
+
+        // Simulate real-time data
+        function simulateRealTimeData() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            
+            // Simulate new actions
+            const randomEmployee = dashboardState.employees[Math.floor(Math.random() * dashboardState.employees.length)];
+            const actionIncrease = Math.floor(Math.random() * 5) + 1;
+            randomEmployee.actions += actionIncrease;
+            
+            // Update success rate
+            if (Math.random() < 0.3) {
+                randomEmployee.success += (Math.random() - 0.5) * 0.2;
+                randomEmployee.success = Math.max(0, Math.min(10, randomEmployee.success));
+            }
+            
+            // Add to real-time data
+            dashboardState.realtimeData.timestamps.push(timeStr);
+            dashboardState.realtimeData.actions.push(actionIncrease * 12); // Actions per minute
+            
+            // Keep only last 20 data points
+            if (dashboardState.realtimeData.timestamps.length > 20) {
+                dashboardState.realtimeData.timestamps.shift();
+                dashboardState.realtimeData.actions.shift();
+            }
+            
+            // Random notifications
+            if (Math.random() < 0.2) {
+                const messages = [
+                    `${randomEmployee.name} completed ${actionIncrease} actions`,
+                    `New milestone reached by ${randomEmployee.name}`,
+                    `Performance spike detected`,
+                    `System running optimally`
+                ];
+                showNotification(
+                    messages[Math.floor(Math.random() * messages.length)],
+                    ['success', 'info', 'warning'][Math.floor(Math.random() * 3)]
+                );
+            }
+        }
+
+        // Update all charts
+        function updateCharts() {
+            // Update performance chart
+            if (dashboardState.charts.performance) {
+                dashboardState.charts.performance.data.labels = [...dashboardState.realtimeData.timestamps];
+                dashboardState.charts.performance.data.datasets[0].data = [...dashboardState.realtimeData.actions];
+                dashboardState.charts.performance.update('none');
+            }
+            
+            // Update trends chart
+            if (dashboardState.charts.trends) {
+                dashboardState.charts.trends.data.labels = [...dashboardState.realtimeData.timestamps];
+                dashboardState.employees.slice(0, 3).forEach((emp, idx) => {
+                    if (dashboardState.charts.trends.data.datasets[idx]) {
+                        // Simulate trend data
+                        if (dashboardState.charts.trends.data.datasets[idx].data.length >= 20) {
+                            dashboardState.charts.trends.data.datasets[idx].data.shift();
+                        }
+                        dashboardState.charts.trends.data.datasets[idx].data.push(
+                            emp.success + (Math.random() - 0.5) * 0.5
+                        );
+                    }
+                });
+                dashboardState.charts.trends.update('none');
+            }
+            
+            // Update distribution chart
+            if (dashboardState.charts.distribution && Math.random() < 0.1) {
+                const totalActions = dashboardState.employees.reduce((sum, emp) => sum + emp.actions, 0);
+                dashboardState.charts.distribution.data.datasets[0].data[0] = Math.floor(totalActions * 0.79);
+                dashboardState.charts.distribution.update('none');
+            }
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            const totalActions = dashboardState.employees.reduce((sum, emp) => sum + emp.actions, 0);
+            const avgSuccess = dashboardState.employees.reduce((sum, emp) => sum + emp.success, 0) / dashboardState.employees.length;
+            const activeUsers = dashboardState.employees.filter(emp => emp.active).length;
+            const actionsPerMin = dashboardState.realtimeData.actions.slice(-1)[0] || 0;
+            
+            document.getElementById('totalActions').textContent = totalActions.toLocaleString();
+            document.getElementById('actionsPerMin').textContent = actionsPerMin;
+            document.getElementById('successRate').textContent = avgSuccess.toFixed(1) + '%';
+            document.getElementById('activeUsers').textContent = activeUsers;
+            document.getElementById('totalRevenue').textContent = '$' + (totalActions * 17).toLocaleString();
+        }
+
+        // Update activity feed
+        function updateActivityFeed() {
+            if (Math.random() < 0.3) {
+                const activities = [
+                    'completed a case',
+                    'added a comment',
+                    'secured a deposit',
+                    'updated stage',
+                    'made a call',
+                    'sent an email'
+                ];
+                
+                const randomEmployee = dashboardState.employees[Math.floor(Math.random() * dashboardState.employees.length)];
+                const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+                
+                addActivityItem(randomEmployee, randomActivity);
+            }
+        }
+
+        // Add activity item
+        function addActivityItem(employee, activity) {
+            const feed = document.getElementById('activityFeed');
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            
+            item.innerHTML = `
+                <div class="activity-avatar">${employee.avatar}</div>
+                <div class="activity-content">
+                    <div class="activity-text">
+                        <strong>${employee.name}</strong> ${activity}
+                    </div>
+                    <div class="activity-time">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            
+            feed.insertBefore(item, feed.firstChild);
+            
+            // Keep only last 15 items
+            while (feed.children.length > 15) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        // Update leaderboard
+        function updateLeaderboard() {
+            const sortedEmployees = [...dashboardState.employees].sort((a, b) => b.actions - a.actions);
+            const leaderboard = document.getElementById('leaderboard');
+            leaderboard.innerHTML = '';
+            
+            sortedEmployees.forEach((emp, idx) => {
+                const item = document.createElement('div');
+                item.className = 'leaderboard-item';
+                
+                const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other';
+                const progressWidth = (emp.actions / sortedEmployees[0].actions) * 100;
+                
+                item.innerHTML = `
+                    <div class="rank-badge ${rankClass}">${idx + 1}</div>
+                    <div class="employee-info">
+                        <div class="employee-name">${emp.name} ${emp.active ? '🟢' : '🔴'}</div>
+                        <div class="employee-stats">${emp.actions} actions • ${emp.success.toFixed(1)}% success</div>
+                    </div>
+                    <div class="progress-indicator">
+                        <div class="progress-bar" style="width: ${progressWidth}%"></div>
+                    </div>
+                `;
+                
+                leaderboard.appendChild(item);
+            });
+        }
+
+        // Update clock
+        function updateClock() {
+            setInterval(() => {
+                document.getElementById('currentTime').textContent = new Date().toLocaleTimeString();
+            }, 1000);
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            if (!dashboardState.notificationsEnabled) return;
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            notification.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">${type.toUpperCase()}</div>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+                <div>${message}</div>
+            `;
+            
+            document.getElementById('notifications').appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Generate initial data
+        function generateInitialData() {
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    simulateRealTimeData();
+                    updateActivityFeed();
+                }, i * 200);
+            }
+            updateLeaderboard();
+        }
+
+        // Show welcome notification
+        function showWelcomeNotification() {
+            setTimeout(() => {
+                showNotification('🚀 Advanced Real-Time Dashboard is now live!', 'success');
+            }, 1000);
+            
+            setTimeout(() => {
+                showNotification('📊 All systems operational and monitoring employee performance', 'info');
+            }, 3000);
+        }
+
+        // Control functions
+        function toggleRealTime() {
+            dashboardState.isRealTime = !dashboardState.isRealTime;
+            const btn = document.getElementById('realtimeToggle');
+            btn.textContent = dashboardState.isRealTime ? '🔴 LIVE' : '⏸️ PAUSED';
+            btn.classList.toggle('active');
+            
+            showNotification(
+                dashboardState.isRealTime ? 'Real-time mode activated' : 'Real-time mode paused',
+                'info'
+            );
+        }
+
+        function changeFrequency() {
+            const frequencies = [1000, 2000, 5000, 10000];
+            const labels = ['1 second', '2 seconds', '5 seconds', '10 seconds'];
+            const currentIndex = frequencies.indexOf(dashboardState.updateFrequency);
+            const nextIndex = (currentIndex + 1) % frequencies.length;
+            
+            dashboardState.updateFrequency = frequencies[nextIndex];
+            document.getElementById('frequencyBtn').innerHTML = `⚡ ${labels[nextIndex]}`;
+            
+            showNotification(`Update frequency changed to ${labels[nextIndex]}`, 'info');
+        }
+
+        function changeSource() {
+            const sources = ['websocket', 'polling', 'sse'];
+            const labels = ['🌐 WebSocket', '🔄 Polling', '📡 SSE'];
+            const currentIndex = sources.indexOf(dashboardState.dataSource);
+            const nextIndex = (currentIndex + 1) % sources.length;
+            
+            dashboardState.dataSource = sources[nextIndex];
+            document.getElementById('sourceBtn').innerHTML = labels[nextIndex];
+            
+            showNotification(`Data source changed to ${sources[nextIndex]}`, 'info');
+        }
+
+        function toggleNotifications() {
+            dashboardState.notificationsEnabled = !dashboardState.notificationsEnabled;
+            const btn = document.getElementById('notifBtn');
+            btn.textContent = dashboardState.notificationsEnabled ? '🔔 ON' : '🔕 OFF';
+            btn.classList.toggle('active');
+            
+            if (dashboardState.notificationsEnabled) {
+                showNotification('Notifications enabled', 'success');
+            }
+        }
+
+        function togglePerformanceMode() {
+            const modes = ['standard', 'high', 'ultra'];
+            const labels = ['🚀 Standard', '⚡ High', '🔥 Ultra'];
+            const currentIndex = modes.indexOf(dashboardState.performanceMode);
+            const nextIndex = (currentIndex + 1) % modes.length;
+            
+            dashboardState.performanceMode = modes[nextIndex];
+            document.getElementById('perfBtn').innerHTML = labels[nextIndex];
+            
+            showNotification(`Performance mode: ${modes[nextIndex]}`, 'info');
+        }
+
+        function resetDashboard() {
+            if (confirm('Are you sure you want to reset all data?')) {
+                // Reset employee data
+                dashboardState.employees = [
+                    { id: 1, name: 'Harish Sahare', actions: 362, success: 5.0, active: true, avatar: 'HS' },
+                    { id: 2, name: 'Arun Ghule', actions: 296, success: 0.3, active: true, avatar: 'AG' },
+                    { id: 3, name: 'Irshaad Sheikh', actions: 293, success: 1.0, active: false, avatar: 'IS' },
+                    { id: 4, name: 'Rishabh Dabruse', actions: 255, success: 2.4, active: true, avatar: 'RD' },
+                    { id: 5, name: 'Ashlesha Nandankar', actions: 234, success: 0.4, active: true, avatar: 'AN' }
+                ];
+                
+                // Clear real-time data
+                dashboardState.realtimeData = {
+                    timestamps: [],
+                    actions: [],
+                    successRates: [],
+                    activities: []
+                };
+                
+                // Clear charts
+                Object.values(dashboardState.charts).forEach(chart => {
+                    if (chart.data.labels) chart.data.labels = [];
+                    chart.data.datasets.forEach(dataset => {
+                        if (dataset.data) dataset.data = [];
+                    });
+                    chart.update();
+                });
+                
+                // Clear feeds
+                document.getElementById('activityFeed').innerHTML = '';
+                
+                updateMetrics();
+                updateLeaderboard();
+                generateInitialData();
+                
+                showNotification('Dashboard reset successfully!', 'success');
+            }
+        }
+
+        // Chart control functions
+        function toggleChartAnimation(chartType) {
+            showNotification(`${chartType} chart animation toggled`, 'info');
+        }
+
+        function exportChart(chartType) {
+            showNotification(`${chartType} chart exported`, 'success');
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
