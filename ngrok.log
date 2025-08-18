@@ -10,3 +10,11 @@ t=2025-08-18T16:27:34+0000 lvl=info msg=end pg=/api/tunnels id=b9da712ff5595620 
 t=2025-08-18T16:27:42+0000 lvl=info msg="join connections" obj=join id=2a69bd9852a9 l=127.0.0.1:4000 r=3.149.168.0:15727
 t=2025-08-18T16:28:46+0000 lvl=info msg=start pg=/api/tunnels id=c9f1e774c27ef0a4
 t=2025-08-18T16:28:46+0000 lvl=info msg=end pg=/api/tunnels id=c9f1e774c27ef0a4 status=200 dur=290.84µs
+t=2025-08-18T16:29:34+0000 lvl=info msg="join connections" obj=join id=64b61cc0c58c l=127.0.0.1:4000 r=[2409:40c2:109:6767:4ff:4ff:fefe:2da1]:40392
+t=2025-08-18T16:29:35+0000 lvl=info msg="join connections" obj=join id=001aa1173892 l=127.0.0.1:4000 r=[2409:40c2:109:6767:4ff:4ff:fefe:2da1]:40392
+t=2025-08-18T16:29:57+0000 lvl=info msg="join connections" obj=join id=dddbfa211008 l=127.0.0.1:4000 r=[2409:40c2:109:6767:4ff:4ff:fefe:2da1]:40392
+t=2025-08-18T16:29:58+0000 lvl=info msg="join connections" obj=join id=befcb900db25 l=127.0.0.1:4000 r=[2409:40c2:109:6767:4ff:4ff:fefe:2da1]:40392
+t=2025-08-18T17:03:55+0000 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=3ed486ecf4d1 clientid=6d2a802f0ced8e6e03c4220692bc0b1e
+t=2025-08-18T17:03:55+0000 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=a6434b357867 err="session closed"
+t=2025-08-18T17:03:55+0000 lvl=info msg="client session established" obj=tunnels.session
+t=2025-08-18T17:03:55+0000 lvl=info msg="tunnel session started" obj=tunnels.session
