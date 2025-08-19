@@ -18,3 +18,4 @@ t=2025-08-18T17:03:55+0000 lvl=eror msg="heartbeat timeout, terminating session"
 t=2025-08-18T17:03:55+0000 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=a6434b357867 err="session closed"
 t=2025-08-18T17:03:55+0000 lvl=info msg="client session established" obj=tunnels.session
 t=2025-08-18T17:03:55+0000 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2025-08-19T03:54:56+0000 lvl=info msg="join connections" obj=join id=a9bd3c8dab58 l=127.0.0.1:4000 r=[2409:40c2:3a:da14:500c:71ff:fe5f:c5d1]:45174
