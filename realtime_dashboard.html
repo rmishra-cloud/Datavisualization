@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Employee Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: #00ff00;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+        
+        .status-bar {
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff00, transparent);
+            animation: scan 3s linear infinite;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric-change {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .positive { background: rgba(0,255,0,0.2); color: #00ff00; }
+        .negative { background: rgba(255,0,0,0.2); color: #ff6b6b; }
+        .neutral { background: rgba(255,255,0,0.2); color: #ffeb3b; }
+        
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+        
+        .activity-feed {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border-left: 3px solid #00ff00;
+            animation: slideInRight 0.5s ease-out;
+        }
+        
+        .activity-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+        
+        .activity-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        
+        .activity-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .leaderboard {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .leaderboard-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        
+        .rank {
+            font-size: 1.2rem;
+            font-weight: bold;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .rank.first { background: #ffd700; color: #000; }
+        .rank.second { background: #c0c0c0; color: #000; }
+        .rank.third { background: #cd7f32; color: #fff; }
+        .rank.other { background: rgba(255,255,255,0.2); }
+        
+        .employee-info {
+            flex: 1;
+        }
+        
+        .employee-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .employee-stats {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        
+        .progress-bar {
+            width: 100px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ffeb3b);
+            border-radius: 4px;
+            transition: width 1s ease-in-out;
+        }
+        
+        .notifications {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 300px;
+        }
+        
+        .notification {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #00ff00;
+            animation: slideInRight 0.5s ease-out;
+            backdrop-filter: blur(10px);
+        }
+        
+        .notification.success { border-left-color: #00ff00; }
+        .notification.warning { border-left-color: #ffeb3b; }
+        .notification.info { border-left-color: #2196f3; }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .control-btn.active {
+            background: rgba(0,255,0,0.3);
+            border-color: #00ff00;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+            to { text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(0,255,255,0.5); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes countUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .count-animation {
+            animation: countUp 0.8s ease-out;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .notifications {
+                width: calc(100% - 40px);
+                right: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fas fa-broadcast-tower"></i> Real-Time Performance Dashboard</h1>
+        <div class="live-indicator">
+            <div class="live-dot"></div>
+            <span>LIVE</span>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div>
+            <i class="fas fa-clock"></i>
+            Last Update: <span id="lastUpdate">--:--:--</span>
+        </div>
+        <div>
+            <i class="fas fa-users"></i>
+            Active Users: <span id="activeUsers">5</span>
+        </div>
+        <div>
+            <i class="fas fa-server"></i>
+            Server: <span style="color: #00ff00;">Online</span>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div class="notifications" id="notifications"></div>
+
+    <div class="container">
+        <!-- Real-time Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value" id="totalActions">1,440</div>
+                <div class="metric-label">Total Actions</div>
+                <div class="metric-change positive" id="actionsChange">+12 (2 min ago)</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-value" id="avgActions">288</div>
+                <div class="metric-label">Average Actions</div>
+                <div class="metric-change neutral" id="avgChange">±0 (stable)</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-value" id="successRate">2.1%</div>
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-change positive" id="successChange">+0.1% (trending up)</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-value" id="activeNow">3</div>
+                <div class="metric-label">Active Now</div>
+                <div class="metric-change positive" id="activeChange">+1 (just joined)</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-value" id="todayDeposits">18</div>
+                <div class="metric-label">Today's Deposits</div>
+                <div class="metric-change positive" id="depositsChange">+2 (5 min ago)</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn active" onclick="toggleRealTime()">
+                <i class="fas fa-play"></i> Real-Time Mode
+            </button>
+            <button class="control-btn" onclick="changeUpdateSpeed()">
+                <i class="fas fa-tachometer-alt"></i> Update Speed: 2s
+            </button>
+            <button class="control-btn" onclick="toggleNotifications()">
+                <i class="fas fa-bell"></i> Notifications ON
+            </button>
+            <button class="control-btn" onclick="resetData()">
+                <i class="fas fa-refresh"></i> Reset Data
+            </button>
+        </div>
+
+        <!-- Charts Container -->
+        <div class="charts-container">
+            <!-- Real-time Performance Chart -->
+            <div class="chart-card">
+                <div class="chart-title">
+                    <i class="fas fa-chart-line"></i>
+                    Live Performance Stream
+                </div>
+                <div class="chart-container">
+                    <canvas id="realtimeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Activity Distribution -->
+            <div class="chart-card">
+                <div class="chart-title">
+                    <i class="fas fa-pie-chart"></i>
+                    Live Activity Distribution
+                </div>
+                <div class="chart-container">
+                    <canvas id="activityPie"></canvas>
+                </div>
+            </div>
+
+            <!-- Success Rate Trends -->
+            <div class="chart-card">
+                <div class="chart-title">
+                    <i class="fas fa-chart-area"></i>
+                    Success Rate Trends
+                </div>
+                <div class="chart-container">
+                    <canvas id="successTrends"></canvas>
+                </div>
+            </div>
+
+            <!-- Employee Activity Bars -->
+            <div class="chart-card">
+                <div class="chart-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Employee Activity Bars
+                </div>
+                <div class="chart-container">
+                    <canvas id="employeeBars"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Feed and Leaderboard -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+            <!-- Live Activity Feed -->
+            <div class="activity-feed">
+                <h3 style="margin-bottom: 15px; text-align: center;">
+                    <i class="fas fa-stream"></i> Live Activity Feed
+                </h3>
+                <div id="activityFeed">
+                    <!-- Activity items will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Live Leaderboard -->
+            <div class="leaderboard">
+                <h3 style="margin-bottom: 15px; text-align: center;">
+                    <i class="fas fa-trophy"></i> Live Leaderboard
+                </h3>
+                <div id="leaderboard">
+                    <!-- Leaderboard items will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let isRealTimeActive = true;
+        let updateInterval = 2000; // 2 seconds
+        let notificationsEnabled = true;
+        let updateTimer;
+        let chartInstances = {};
+        
+        // Employee data with real-time simulation
+        let employeeData = [
+            { name: 'Harish Sahare', actions: 362, comments: 238, deposits: 5, closed: 13, success: 5.0, active: true },
+            { name: 'Arun Ghule', actions: 296, comments: 232, deposits: 1, closed: 0, success: 0.3, active: true },
+            { name: 'Irshaad Sheikh', actions: 293, comments: 212, deposits: 3, closed: 0, success: 1.0, active: false },
+            { name: 'Rishabh Dabruse', actions: 255, comments: 217, deposits: 6, closed: 0, success: 2.4, active: true },
+            { name: 'Ashlesha Nandankar', actions: 234, comments: 191, deposits: 1, closed: 0, success: 0.4, active: false }
+        ];
+
+        // Real-time data storage
+        let realtimeData = {
+            timestamps: [],
+            totalActions: [],
+            successRates: [],
+            activities: []
+        };
+
+        // Initialize dashboard
+        function initDashboard() {
+            updateLastUpdateTime();
+            createCharts();
+            startRealTimeUpdates();
+            generateInitialActivity();
+            updateLeaderboard();
+            showNotification('Dashboard initialized successfully!', 'success');
+        }
+
+        // Update last update time
+        function updateLastUpdateTime() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+        }
+
+        // Create all charts
+        function createCharts() {
+            createRealtimeChart();
+            createActivityPieChart();
+            createSuccessTrendsChart();
+            createEmployeeBarsChart();
+        }
+
+        // Real-time line chart
+        function createRealtimeChart() {
+            const ctx = document.getElementById('realtimeChart').getContext('2d');
+            chartInstances.realtime = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Total Actions',
+                        data: [],
+                        borderColor: '#00ff00',
+                        backgroundColor: 'rgba(0,255,0,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { color: 'white' }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: { 
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        }
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+        }
+
+        // Activity pie chart
+        function createActivityPieChart() {
+            const ctx = document.getElementById('activityPie').getContext('2d');
+            chartInstances.activityPie = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Comments', 'Deposits', 'Cases Closed', 'Other'],
+                    datasets: [{
+                        data: [1141, 16, 13, 270],
+                        backgroundColor: ['#00ff00', '#ffeb3b', '#ff6b6b', '#2196f3'],
+                        borderWidth: 2,
+                        borderColor: 'rgba(255,255,255,0.2)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { color: 'white' },
+                            position: 'bottom'
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1000
+                    }
+                }
+            });
+        }
+
+        // Success trends chart
+        function createSuccessTrendsChart() {
+            const ctx = document.getElementById('successTrends').getContext('2d');
+            chartInstances.successTrends = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: employeeData.slice(0, 3).map((emp, idx) => ({
+                        label: emp.name,
+                        data: [],
+                        borderColor: ['#00ff00', '#ffeb3b', '#ff6b6b'][idx],
+                        backgroundColor: ['rgba(0,255,0,0.1)', 'rgba(255,235,59,0.1)', 'rgba(255,107,107,0.1)'][idx],
+                        fill: false,
+                        tension: 0.4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { color: 'white' }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: { 
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Employee bars chart
+        function createEmployeeBarsChart() {
+            const ctx = document.getElementById('employeeBars').getContext('2d');
+            chartInstances.employeeBars = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: employeeData.map(emp => emp.name),
+                    datasets: [{
+                        label: 'Actions',
+                        data: employeeData.map(emp => emp.actions),
+                        backgroundColor: employeeData.map((emp, idx) => 
+                            emp.active ? 'rgba(0,255,0,0.7)' : 'rgba(255,255,255,0.3)'
+                        ),
+                        borderColor: employeeData.map((emp, idx) => 
+                            emp.active ? '#00ff00' : '#ffffff'
+                        ),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            labels: { color: 'white' }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        y: { 
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            beginAtZero: true
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutBounce'
+                    }
+                }
+            });
+        }
+
+        // Simulate real-time data updates
+        function simulateDataUpdate() {
+            // Simulate random activity
+            const randomEmp = employeeData[Math.floor(Math.random() * employeeData.length)];
+            const activityTypes = ['comment', 'deposit', 'case_closed', 'stage_change'];
+            const randomActivity = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+            
+            // Update employee data
+            switch(randomActivity) {
+                case 'comment':
+                    randomEmp.comments += 1;
+                    randomEmp.actions += 1;
+                    break;
+                case 'deposit':
+                    randomEmp.deposits += 1;
+                    randomEmp.actions += 1;
+                    break;
+                case 'case_closed':
+                    randomEmp.closed += 1;
+                    randomEmp.actions += 1;
+                    break;
+                case 'stage_change':
+                    randomEmp.actions += 1;
+                    break;
+            }
+            
+            // Recalculate success rate
+            randomEmp.success = ((randomEmp.deposits + randomEmp.closed) / randomEmp.actions * 100).toFixed(1);
+            
+            // Add to activity feed
+            addActivityItem(randomEmp.name, randomActivity);
+            
+            // Update charts and metrics
+            updateMetrics();
+            updateCharts();
+            updateLeaderboard();
+            
+            // Random chance for notifications
+            if (Math.random() < 0.3) {
+                const messages = [
+                    `${randomEmp.name} just completed a ${randomActivity}!`,
+                    `New activity detected from ${randomEmp.name}`,
+                    `${randomEmp.name} is showing great progress!`,
+                    `Performance update: ${randomEmp.name} active now`
+                ];
+                showNotification(messages[Math.floor(Math.random() * messages.length)], 'info');
+            }
+            
+            updateLastUpdateTime();
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            const totalActions = employeeData.reduce((sum, emp) => sum + emp.actions, 0);
+            const avgActions = Math.round(totalActions / employeeData.length);
+            const totalDeposits = employeeData.reduce((sum, emp) => sum + emp.deposits, 0);
+            const totalClosed = employeeData.reduce((sum, emp) => sum + emp.closed, 0);
+            const successRate = ((totalDeposits + totalClosed) / totalActions * 100).toFixed(1);
+            const activeNow = employeeData.filter(emp => emp.active).length;
+            
+            // Animate counter updates
+            animateCounter('totalActions', totalActions);
+            animateCounter('avgActions', avgActions);
+            animateCounter('successRate', successRate + '%');
+            animateCounter('activeNow', activeNow);
+            animateCounter('todayDeposits', totalDeposits);
+        }
+
+        // Animate counter
+        function animateCounter(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            element.classList.add('count-animation');
+            element.textContent = newValue;
+            setTimeout(() => element.classList.remove('count-animation'), 800);
+        }
+
+        // Update charts
+        function updateCharts() {
+            const now = new Date().toLocaleTimeString();
+            const totalActions = employeeData.reduce((sum, emp) => sum + emp.actions, 0);
+            
+            // Update real-time chart
+            if (chartInstances.realtime) {
+                chartInstances.realtime.data.labels.push(now);
+                chartInstances.realtime.data.datasets[0].data.push(totalActions);
+                
+                // Keep only last 10 data points
+                if (chartInstances.realtime.data.labels.length > 10) {
+                    chartInstances.realtime.data.labels.shift();
+                    chartInstances.realtime.data.datasets[0].data.shift();
+                }
+                
+                chartInstances.realtime.update('none');
+            }
+            
+            // Update activity pie chart
+            if (chartInstances.activityPie) {
+                const totalComments = employeeData.reduce((sum, emp) => sum + emp.comments, 0);
+                const totalDeposits = employeeData.reduce((sum, emp) => sum + emp.deposits, 0);
+                const totalClosed = employeeData.reduce((sum, emp) => sum + emp.closed, 0);
+                const other = totalActions - totalComments - totalDeposits - totalClosed;
+                
+                chartInstances.activityPie.data.datasets[0].data = [totalComments, totalDeposits, totalClosed, other];
+                chartInstances.activityPie.update('none');
+            }
+            
+            // Update success trends
+            if (chartInstances.successTrends) {
+                chartInstances.successTrends.data.labels.push(now);
+                employeeData.slice(0, 3).forEach((emp, idx) => {
+                    chartInstances.successTrends.data.datasets[idx].data.push(parseFloat(emp.success));
+                });
+                
+                // Keep only last 10 data points
+                if (chartInstances.successTrends.data.labels.length > 10) {
+                    chartInstances.successTrends.data.labels.shift();
+                    chartInstances.successTrends.data.datasets.forEach(dataset => {
+                        dataset.data.shift();
+                    });
+                }
+                
+                chartInstances.successTrends.update('none');
+            }
+            
+            // Update employee bars
+            if (chartInstances.employeeBars) {
+                chartInstances.employeeBars.data.datasets[0].data = employeeData.map(emp => emp.actions);
+                chartInstances.employeeBars.data.datasets[0].backgroundColor = employeeData.map((emp, idx) => 
+                    emp.active ? 'rgba(0,255,0,0.7)' : 'rgba(255,255,255,0.3)'
+                );
+                chartInstances.employeeBars.update('active');
+            }
+        }
+
+        // Add activity item
+        function addActivityItem(employeeName, activityType) {
+            const feed = document.getElementById('activityFeed');
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            
+            const icons = {
+                comment: { icon: '💬', color: '#00ff00', text: 'added a comment' },
+                deposit: { icon: '💰', color: '#ffeb3b', text: 'secured a deposit' },
+                case_closed: { icon: '✅', color: '#ff6b6b', text: 'closed a case' },
+                stage_change: { icon: '🔄', color: '#2196f3', text: 'updated stage' }
+            };
+            
+            const activity = icons[activityType] || icons.comment;
+            
+            item.innerHTML = `
+                <div class="activity-icon" style="background: ${activity.color};">
+                    ${activity.icon}
+                </div>
+                <div class="activity-text">
+                    <strong>${employeeName}</strong> ${activity.text}
+                </div>
+                <div class="activity-time">
+                    ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+            
+            feed.insertBefore(item, feed.firstChild);
+            
+            // Keep only last 10 activities
+            while (feed.children.length > 10) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        // Update leaderboard
+        function updateLeaderboard() {
+            const sortedEmployees = [...employeeData].sort((a, b) => b.actions - a.actions);
+            const leaderboard = document.getElementById('leaderboard');
+            leaderboard.innerHTML = '';
+            
+            sortedEmployees.forEach((emp, idx) => {
+                const item = document.createElement('div');
+                item.className = 'leaderboard-item';
+                
+                const rankClass = idx === 0 ? 'first' : idx === 1 ? 'second' : idx === 2 ? 'third' : 'other';
+                const progressWidth = (emp.actions / sortedEmployees[0].actions) * 100;
+                
+                item.innerHTML = `
+                    <div class="rank ${rankClass}">${idx + 1}</div>
+                    <div class="employee-info">
+                        <div class="employee-name">${emp.name} ${emp.active ? '🟢' : '🔴'}</div>
+                        <div class="employee-stats">${emp.actions} actions • ${emp.success}% success</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressWidth}%"></div>
+                    </div>
+                `;
+                
+                leaderboard.appendChild(item);
+            });
+        }
+
+        // Generate initial activity
+        function generateInitialActivity() {
+            const activities = [
+                'Harish Sahare completed a case closure',
+                'Arun Ghule added a new comment',
+                'Rishabh Dabruse secured a deposit',
+                'System initialized successfully',
+                'Real-time monitoring started'
+            ];
+            
+            activities.forEach((activity, idx) => {
+                setTimeout(() => {
+                    const item = document.createElement('div');
+                    item.className = 'activity-item';
+                    item.innerHTML = `
+                        <div class="activity-icon" style="background: #2196f3;">ℹ️</div>
+                        <div class="activity-text">${activity}</div>
+                        <div class="activity-time">${new Date().toLocaleTimeString()}</div>
+                    `;
+                    document.getElementById('activityFeed').appendChild(item);
+                }, idx * 500);
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            if (!notificationsEnabled) return;
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.getElementById('notifications').appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+
+        // Start real-time updates
+        function startRealTimeUpdates() {
+            if (updateTimer) clearInterval(updateTimer);
+            
+            updateTimer = setInterval(() => {
+                if (isRealTimeActive) {
+                    simulateDataUpdate();
+                }
+            }, updateInterval);
+        }
+
+        // Control functions
+        function toggleRealTime() {
+            isRealTimeActive = !isRealTimeActive;
+            const btn = event.target.closest('.control-btn');
+            btn.classList.toggle('active');
+            btn.innerHTML = isRealTimeActive ? 
+                '<i class="fas fa-pause"></i> Real-Time Mode' : 
+                '<i class="fas fa-play"></i> Real-Time Mode';
+            
+            showNotification(isRealTimeActive ? 'Real-time mode activated' : 'Real-time mode paused', 'info');
+        }
+
+        function changeUpdateSpeed() {
+            const speeds = [1000, 2000, 5000, 10000]; // 1s, 2s, 5s, 10s
+            const labels = ['1s', '2s', '5s', '10s'];
+            const currentIndex = speeds.indexOf(updateInterval);
+            const nextIndex = (currentIndex + 1) % speeds.length;
+            
+            updateInterval = speeds[nextIndex];
+            event.target.innerHTML = `<i class="fas fa-tachometer-alt"></i> Update Speed: ${labels[nextIndex]}`;
+            
+            startRealTimeUpdates();
+            showNotification(`Update speed changed to ${labels[nextIndex]}`, 'info');
+        }
+
+        function toggleNotifications() {
+            notificationsEnabled = !notificationsEnabled;
+            const btn = event.target;
+            btn.innerHTML = notificationsEnabled ? 
+                '<i class="fas fa-bell"></i> Notifications ON' : 
+                '<i class="fas fa-bell-slash"></i> Notifications OFF';
+            
+            if (notificationsEnabled) {
+                showNotification('Notifications enabled', 'success');
+            }
+        }
+
+        function resetData() {
+            // Reset to original data
+            employeeData = [
+                { name: 'Harish Sahare', actions: 362, comments: 238, deposits: 5, closed: 13, success: 5.0, active: true },
+                { name: 'Arun Ghule', actions: 296, comments: 232, deposits: 1, closed: 0, success: 0.3, active: true },
+                { name: 'Irshaad Sheikh', actions: 293, comments: 212, deposits: 3, closed: 0, success: 1.0, active: false },
+                { name: 'Rishabh Dabruse', actions: 255, comments: 217, deposits: 6, closed: 0, success: 2.4, active: true },
+                { name: 'Ashlesha Nandankar', actions: 234, comments: 191, deposits: 1, closed: 0, success: 0.4, active: false }
+            ];
+            
+            // Clear charts
+            Object.values(chartInstances).forEach(chart => {
+                if (chart.data.labels) chart.data.labels = [];
+                if (chart.data.datasets) {
+                    chart.data.datasets.forEach(dataset => {
+                        if (dataset.data) dataset.data = [];
+                    });
+                }
+                chart.update();
+            });
+            
+            // Clear activity feed
+            document.getElementById('activityFeed').innerHTML = '';
+            
+            updateMetrics();
+            updateLeaderboard();
+            generateInitialActivity();
+            showNotification('Data reset successfully!', 'success');
+        }
+
+        // Simulate random employee status changes
+        setInterval(() => {
+            if (Math.random() < 0.1) { // 10% chance every interval
+                const randomEmp = employeeData[Math.floor(Math.random() * employeeData.length)];
+                randomEmp.active = !randomEmp.active;
+                updateLeaderboard();
+                
+                const activeCount = employeeData.filter(emp => emp.active).length;
+                document.getElementById('activeUsers').textContent = activeCount;
+                
+                showNotification(`${randomEmp.name} is now ${randomEmp.active ? 'online' : 'offline'}`, 'info');
+            }
+        }, 15000); // Check every 15 seconds
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+        
+        // Update active users count periodically
+        setInterval(() => {
+            const activeCount = employeeData.filter(emp => emp.active).length;
+            document.getElementById('activeUsers').textContent = activeCount;
+        }, 5000);
+    </script>
+</body>
+</html>

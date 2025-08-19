@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Charts Dashboard - Employee Performance Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-gradient"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/helpers.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --dark-bg: #0f0f23;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --shadow-light: rgba(255, 255, 255, 0.1);
+            --shadow-dark: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--dark-bg);
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.2) 0%, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Animated background elements */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .floating-element {
+            position: absolute;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+            backdrop-filter: blur(2px);
+        }
+
+        .floating-element:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 10%; animation-delay: 0s; }
+        .floating-element:nth-child(2) { width: 120px; height: 120px; top: 60%; left: 80%; animation-delay: 2s; }
+        .floating-element:nth-child(3) { width: 60px; height: 60px; top: 80%; left: 20%; animation-delay: 4s; }
+        .floating-element:nth-child(4) { width: 100px; height: 100px; top: 20%; left: 70%; animation-delay: 1s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 0.6; }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 25px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .header-icon {
+            font-size: 2.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Main container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 30px;
+        }
+
+        /* Charts grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+            opacity: 0.8;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.4),
+                0 0 40px rgba(102, 126, 234, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chart-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chart-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chart-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-btn.active {
+            background: var(--primary-gradient);
+            border-color: transparent;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 450px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container.large {
+            height: 550px;
+        }
+
+        .chart-container.medium {
+            height: 400px;
+        }
+
+        .chart-container.small {
+            height: 350px;
+        }
+
+        /* Chart info panels */
+        .chart-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .info-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Detailed metrics section */
+        .metrics-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .metrics-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            text-align: center;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .metric-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .metric-trend {
+            font-size: 0.75rem;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .trend-up { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
+        .trend-down { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+        .trend-stable { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+
+        /* Enhanced animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .header-content {
+                padding: 0 15px;
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .header-stats {
+                justify-content: center;
+            }
+            
+            .chart-card {
+                padding: 20px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            .chart-container.large {
+                height: 350px;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-gradient);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="bg-animation">
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <div class="header-icon">📊</div>
+                <div>
+                    <h1>Premium Charts Dashboard</h1>
+                    <div class="chart-subtitle">Advanced Employee Performance Analytics</div>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalEmployees">5</div>
+                    <div class="stat-label">Employees</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalActions">1,440</div>
+                    <div class="stat-label">Actions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="avgSuccess">2.0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="currentTime">--:--</div>
+                    <div class="stat-label">Live Time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Key Metrics Section -->
+        <div class="metrics-section fade-in-up">
+            <h2 class="metrics-title">📈 Key Performance Indicators</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">🏆</div>
+                    <div class="metric-value">362</div>
+                    <div class="metric-label">Top Performance</div>
+                    <div class="metric-trend trend-up">↗ +25% vs avg</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">⚡</div>
+                    <div class="metric-value">288</div>
+                    <div class="metric-label">Team Average</div>
+                    <div class="metric-trend trend-stable">→ Stable</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">🎯</div>
+                    <div class="metric-value">5.0%</div>
+                    <div class="metric-label">Best Success Rate</div>
+                    <div class="metric-trend trend-up">↗ +150% vs team</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-value">29</div>
+                    <div class="metric-label">Total Conversions</div>
+                    <div class="metric-trend trend-up">↗ +12% today</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">📊</div>
+                    <div class="metric-value">79.2%</div>
+                    <div class="metric-label">Activity Rate</div>
+                    <div class="metric-trend trend-up">↗ High engagement</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">⏱️</div>
+                    <div class="metric-value">4.2</div>
+                    <div class="metric-label">Efficiency Score</div>
+                    <div class="metric-trend trend-up">↗ Above target</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Advanced Performance Analysis -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            📈 Performance Analysis Matrix
+                        </div>
+                        <div class="chart-subtitle">Multi-dimensional employee performance tracking</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">Live</button>
+                        <button class="chart-btn">Daily</button>
+                        <button class="chart-btn">Weekly</button>
+                    </div>
+                </div>
+                <div class="chart-container large">
+                    <canvas id="performanceMatrix"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">362</div>
+                        <div class="info-label">Peak Actions</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">5.0%</div>
+                        <div class="info-label">Peak Success</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">25.7%</div>
+                        <div class="info-label">Performance Gap</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">4.2</div>
+                        <div class="info-label">Efficiency Index</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Rate Trends -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            🎯 Success Rate Evolution
+                        </div>
+                        <div class="chart-subtitle">Conversion trends and performance patterns</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">Trend</button>
+                        <button class="chart-btn">Compare</button>
+                        <button class="chart-btn">Forecast</button>
+                    </div>
+                </div>
+                <div class="chart-container large">
+                    <canvas id="successTrends"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">13</div>
+                        <div class="info-label">Cases Closed</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">16</div>
+                        <div class="info-label">Deposits</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">2.0%</div>
+                        <div class="info-label">Team Average</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">+0.3%</div>
+                        <div class="info-label">Daily Growth</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Composition Analysis -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            🥧 Activity Composition Breakdown
+                        </div>
+                        <div class="chart-subtitle">Detailed analysis of daily activities and time allocation</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">Detailed</button>
+                        <button class="chart-btn">Summary</button>
+                        <button class="chart-btn">Compare</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="activityComposition"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">1,141</div>
+                        <div class="info-label">Comments</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">16</div>
+                        <div class="info-label">Deposits</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">13</div>
+                        <div class="info-label">Closures</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">270</div>
+                        <div class="info-label">Other Tasks</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Radar -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            🎯 Multi-Dimensional Performance Radar
+                        </div>
+                        <div class="chart-subtitle">Comprehensive skill and performance assessment</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">All</button>
+                        <button class="chart-btn">Top 3</button>
+                        <button class="chart-btn">Compare</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="performanceRadar"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">85%</div>
+                        <div class="info-label">Productivity</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">72%</div>
+                        <div class="info-label">Quality</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">68%</div>
+                        <div class="info-label">Consistency</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">91%</div>
+                        <div class="info-label">Engagement</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Bubble Analysis -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            💫 Performance vs Efficiency Bubble Analysis
+                        </div>
+                        <div class="chart-subtitle">Advanced correlation analysis with volume indicators</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">Current</button>
+                        <button class="chart-btn">Historical</button>
+                        <button class="chart-btn">Predicted</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bubbleAnalysis"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">0.85</div>
+                        <div class="info-label">Correlation</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">92%</div>
+                        <div class="info-label">Confidence</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">3.2</div>
+                        <div class="info-label">Efficiency Ratio</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">High</div>
+                        <div class="info-label">Trend Strength</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stacked Performance Analysis -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            📚 Comprehensive Activity Stack Analysis
+                        </div>
+                        <div class="chart-subtitle">Detailed breakdown of individual contributions</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">Stacked</button>
+                        <button class="chart-btn">Percentage</button>
+                        <button class="chart-btn">Individual</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="stackedAnalysis"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">100%</div>
+                        <div class="info-label">Coverage</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">5</div>
+                        <div class="info-label">Categories</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">1,440</div>
+                        <div class="info-label">Total Volume</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">288</div>
+                        <div class="info-label">Per Employee</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Polar Performance Distribution -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            ⭕ Polar Performance Distribution
+                        </div>
+                        <div class="chart-subtitle">Unique circular visualization of performance metrics</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">Polar</button>
+                        <button class="chart-btn">Radial</button>
+                        <button class="chart-btn">3D</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="polarDistribution"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">360°</div>
+                        <div class="info-label">Coverage</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">5</div>
+                        <div class="info-label">Segments</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">Max</div>
+                        <div class="info-label">Harish S.</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">25.7%</div>
+                        <div class="info-label">Variance</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Series Analysis -->
+            <div class="chart-card fade-in-up">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">
+                            ⏰ Time Series Performance Analysis
+                        </div>
+                        <div class="chart-subtitle">Historical trends and predictive modeling</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn active">7 Days</button>
+                        <button class="chart-btn">30 Days</button>
+                        <button class="chart-btn">Forecast</button>
+                    </div>
+                </div>
+                <div class="chart-container large">
+                    <canvas id="timeSeriesAnalysis"></canvas>
+                </div>
+                <div class="chart-info">
+                    <div class="info-item">
+                        <div class="info-value">+12%</div>
+                        <div class="info-label">Weekly Growth</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">98.5%</div>
+                        <div class="info-label">Accuracy</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">Positive</div>
+                        <div class="info-label">Trend</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-value">High</div>
+                        <div class="info-label">Confidence</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Employee data
+        const employeeData = [
+            { name: 'Harish Sahare', actions: 362, comments: 238, deposits: 5, closed: 13, success: 5.0 },
+            { name: 'Arun Ghule', actions: 296, comments: 232, deposits: 1, closed: 0, success: 0.3 },
+            { name: 'Irshaad Sheikh', actions: 293, comments: 212, deposits: 3, closed: 0, success: 1.0 },
+            { name: 'Rishabh Dabruse', actions: 255, comments: 217, deposits: 6, closed: 0, success: 2.4 },
+            { name: 'Ashlesha Nandankar', actions: 234, comments: 191, deposits: 1, closed: 0, success: 0.4 }
+        ];
+
+        // Color schemes
+        const colors = {
+            gradients: [
+                { start: '#667eea', end: '#764ba2' },
+                { start: '#f093fb', end: '#f5576c' },
+                { start: '#4facfe', end: '#00f2fe' },
+                { start: '#43e97b', end: '#38f9d7' },
+                { start: '#fa709a', end: '#fee140' }
+            ],
+            solid: ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'],
+            alpha: ['rgba(102, 126, 234, 0.8)', 'rgba(240, 147, 251, 0.8)', 'rgba(79, 172, 254, 0.8)', 'rgba(67, 233, 123, 0.8)', 'rgba(250, 112, 154, 0.8)']
+        };
+
+        // Chart configurations
+        const chartDefaults = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#ffffff',
+                        font: { size: 12, weight: '600' },
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#667eea',
+                    borderWidth: 1,
+                    cornerRadius: 12,
+                    displayColors: true,
+                    font: { size: 12 }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#ffffff', font: { size: 11 } },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                y: {
+                    ticks: { color: '#ffffff', font: { size: 11 } },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                }
+            },
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutCubic'
+            }
+        };
+
+        // Create gradients
+        function createGradient(ctx, color1, color2, vertical = false) {
+            const gradient = vertical ? 
+                ctx.createLinearGradient(0, 0, 0, ctx.canvas.height) :
+                ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            return gradient;
+        }
+
+        // Initialize all charts
+        function initializeCharts() {
+            createPerformanceMatrix();
+            createSuccessTrends();
+            createActivityComposition();
+            createPerformanceRadar();
+            createBubbleAnalysis();
+            createStackedAnalysis();
+            createPolarDistribution();
+            createTimeSeriesAnalysis();
+        }
+
+        // Performance Matrix Chart
+        function createPerformanceMatrix() {
+            const ctx = document.getElementById('performanceMatrix').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: employeeData.map(emp => emp.name),
+                    datasets: [
+                        {
+                            label: 'Total Actions',
+                            data: employeeData.map(emp => emp.actions),
+                            backgroundColor: colors.alpha,
+                            borderColor: colors.solid,
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Success Rate (%)',
+                            data: employeeData.map(emp => emp.success * 20), // Scale for visibility
+                            type: 'line',
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 8,
+                            pointHoverRadius: 12,
+                            pointBackgroundColor: '#ff6b6b',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        ...chartDefaults.scales,
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { 
+                                color: '#ffffff',
+                                callback: function(value) {
+                                    return (value / 20).toFixed(1) + '%';
+                                }
+                            },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    if (context.datasetIndex === 1) {
+                                        return `Actual: ${(context.parsed.y / 20).toFixed(1)}%`;
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Success Trends Chart
+        function createSuccessTrends() {
+            const ctx = document.getElementById('successTrends').getContext('2d');
+            
+            // Generate time series data
+            const timeLabels = [];
+            const today = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                timeLabels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: employeeData.map((emp, idx) => ({
+                        label: emp.name,
+                        data: Array.from({length: 7}, () => 
+                            emp.success + (Math.random() - 0.5) * 1
+                        ),
+                        borderColor: colors.solid[idx],
+                        backgroundColor: colors.alpha[idx],
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 10,
+                        pointBackgroundColor: colors.solid[idx],
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3
+                    }))
+                },
+                options: {
+                    ...chartDefaults,
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Activity Composition Chart
+        function createActivityComposition() {
+            const ctx = document.getElementById('activityComposition').getContext('2d');
+            
+            const totalComments = employeeData.reduce((sum, emp) => sum + emp.comments, 0);
+            const totalDeposits = employeeData.reduce((sum, emp) => sum + emp.deposits, 0);
+            const totalClosed = employeeData.reduce((sum, emp) => sum + emp.closed, 0);
+            const totalActions = employeeData.reduce((sum, emp) => sum + emp.actions, 0);
+            const other = totalActions - totalComments - totalDeposits - totalClosed;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Comments', 'Deposits', 'Cases Closed', 'Stage Changes', 'Other Tasks'],
+                    datasets: [{
+                        data: [totalComments, totalDeposits, totalClosed, 45, other - 45],
+                        backgroundColor: colors.alpha,
+                        borderColor: colors.solid,
+                        borderWidth: 3,
+                        hoverOffset: 15,
+                        cutout: '60%'
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        legend: {
+                            ...chartDefaults.plugins.legend,
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Performance Radar Chart
+        function createPerformanceRadar() {
+            const ctx = document.getElementById('performanceRadar').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Productivity', 'Quality', 'Consistency', 'Speed', 'Engagement'],
+                    datasets: employeeData.slice(0, 3).map((emp, idx) => ({
+                        label: emp.name,
+                        data: [
+                            (emp.actions / 400) * 100,
+                            emp.success * 10,
+                            70 + Math.random() * 30,
+                            80 + Math.random() * 20,
+                            85 + Math.random() * 15
+                        ],
+                        backgroundColor: colors.alpha[idx],
+                        borderColor: colors.solid[idx],
+                        borderWidth: 3,
+                        pointRadius: 6,
+                        pointHoverRadius: 10,
+                        pointBackgroundColor: colors.solid[idx],
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2
+                    }))
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { 
+                                color: '#ffffff',
+                                backdropColor: 'transparent'
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                            angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                            pointLabels: { 
+                                color: '#ffffff',
+                                font: { size: 12, weight: '600' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Bubble Analysis Chart
+        function createBubbleAnalysis() {
+            const ctx = document.getElementById('bubbleAnalysis').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Employee Performance',
+                        data: employeeData.map((emp, idx) => ({
+                            x: emp.actions,
+                            y: emp.success,
+                            r: emp.comments / 8,
+                            employee: emp.name,
+                            backgroundColor: colors.alpha[idx],
+                            borderColor: colors.solid[idx],
+                            borderWidth: 3
+                        }))
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        x: {
+                            ...chartDefaults.scales.x,
+                            title: {
+                                display: true,
+                                text: 'Total Actions',
+                                color: '#ffffff',
+                                font: { size: 14, weight: '600' }
+                            }
+                        },
+                        y: {
+                            ...chartDefaults.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Success Rate (%)',
+                                color: '#ffffff',
+                                font: { size: 14, weight: '600' }
+                            }
+                        }
+                    },
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        legend: { display: false },
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                label: function(context) {
+                                    const data = context.raw;
+                                    return [
+                                        `Employee: ${data.employee}`,
+                                        `Actions: ${data.x}`,
+                                        `Success Rate: ${data.y}%`,
+                                        `Comments: ${Math.round(data.r * 8)}`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Stacked Analysis Chart
+        function createStackedAnalysis() {
+            const ctx = document.getElementById('stackedAnalysis').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: employeeData.map(emp => emp.name),
+                    datasets: [
+                        {
+                            label: 'Comments',
+                            data: employeeData.map(emp => emp.comments),
+                            backgroundColor: colors.alpha[0],
+                            borderColor: colors.solid[0],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Deposits',
+                            data: employeeData.map(emp => emp.deposits * 20), // Scale up
+                            backgroundColor: colors.alpha[1],
+                            borderColor: colors.solid[1],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Cases Closed',
+                            data: employeeData.map(emp => emp.closed * 15), // Scale up
+                            backgroundColor: colors.alpha[2],
+                            borderColor: colors.solid[2],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Stage Changes',
+                            data: employeeData.map(() => Math.floor(Math.random() * 20) + 5),
+                            backgroundColor: colors.alpha[3],
+                            borderColor: colors.solid[3],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Other Tasks',
+                            data: employeeData.map(emp => emp.actions - emp.comments - (emp.deposits * 20) - (emp.closed * 15)),
+                            backgroundColor: colors.alpha[4],
+                            borderColor: colors.solid[4],
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        ...chartDefaults.scales,
+                        x: { 
+                            ...chartDefaults.scales.x,
+                            stacked: true 
+                        },
+                        y: { 
+                            ...chartDefaults.scales.y,
+                            stacked: true 
+                        }
+                    }
+                }
+            });
+        }
+
+        // Polar Distribution Chart
+        function createPolarDistribution() {
+            const ctx = document.getElementById('polarDistribution').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: employeeData.map(emp => emp.name),
+                    datasets: [{
+                        data: employeeData.map(emp => emp.actions),
+                        backgroundColor: colors.alpha,
+                        borderColor: colors.solid,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            ticks: { 
+                                color: '#ffffff',
+                                backdropColor: 'transparent'
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                            angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                            pointLabels: { 
+                                color: '#ffffff',
+                                font: { size: 12, weight: '600' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Time Series Analysis Chart
+        function createTimeSeriesAnalysis() {
+            const ctx = document.getElementById('timeSeriesAnalysis').getContext('2d');
+
+            // Generate extended time series
+            const timeLabels = [];
+            const today = new Date();
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                timeLabels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: [
+                        {
+                            label: 'Team Performance',
+                            data: timeLabels.map((_, idx) => 
+                                250 + Math.sin(idx * 0.2) * 50 + Math.random() * 30
+                            ),
+                            borderColor: colors.solid[0],
+                            backgroundColor: colors.alpha[0],
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 8
+                        },
+                        {
+                            label: 'Success Trend',
+                            data: timeLabels.map((_, idx) => 
+                                2 + Math.sin(idx * 0.15) * 0.8 + Math.random() * 0.5
+                            ),
+                            borderColor: colors.solid[1],
+                            backgroundColor: colors.alpha[1],
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 8,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        ...chartDefaults.scales,
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { 
+                                color: '#ffffff',
+                                callback: function(value) {
+                                    return value.toFixed(1) + '%';
+                                }
+                            },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update time display
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        // Initialize dashboard
+        function initDashboard() {
+            // Add fade-in animation to cards
+            const cards = document.querySelectorAll('.fade-in-up');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Initialize charts
+            setTimeout(initializeCharts, 500);
+            
+            // Update time
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // Add chart button interactions
+            document.querySelectorAll('.chart-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const parent = this.closest('.chart-controls');
+                    parent.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // Start dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

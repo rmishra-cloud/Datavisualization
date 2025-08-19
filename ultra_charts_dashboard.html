@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra Premium Charts Dashboard - Advanced Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/patternomaly"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --darker: #020617;
+            --light: #f8fafc;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--darker);
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 70%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Advanced background effects */
+        .bg-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+            animation: float 8s ease-in-out infinite;
+            filter: blur(1px);
+        }
+
+        .orb:nth-child(1) { width: 300px; height: 300px; top: 10%; left: 10%; animation-delay: 0s; }
+        .orb:nth-child(2) { width: 200px; height: 200px; top: 50%; right: 10%; animation-delay: 2s; }
+        .orb:nth-child(3) { width: 250px; height: 250px; bottom: 20%; left: 30%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            33% { transform: translate(30px, -30px) scale(1.1); opacity: 0.5; }
+            66% { transform: translate(-20px, 20px) scale(0.9); opacity: 0.4; }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-text h1 {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text p {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+        }
+
+        .header-metrics {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .metric-pill {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .metric-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .metric-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .metric-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Main container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 30px;
+        }
+
+        /* Premium stats overview */
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+
+        .stat-card:hover::after {
+            opacity: 1;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .stat-trend {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .trend-up { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .trend-down { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .trend-stable { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        .stat-value {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, white, rgba(255, 255, 255, 0.8));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .stat-description {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.4;
+        }
+
+        /* Ultra premium charts grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .chart-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 35px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+        }
+
+        .chart-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+            border-color: var(--primary);
+        }
+
+        .chart-card.span-6 { grid-column: span 6; }
+        .chart-card.span-8 { grid-column: span 8; }
+        .chart-card.span-4 { grid-column: span 4; }
+        .chart-card.span-12 { grid-column: span 12; }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chart-title-group h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, white, rgba(255, 255, 255, 0.8));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .chart-subtitle {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .chart-control {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-control:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .chart-control.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+            color: white;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 25px;
+        }
+
+        .chart-container.large { height: 500px; }
+        .chart-container.xl { height: 600px; }
+        .chart-container.medium { height: 350px; }
+        .chart-container.small { height: 300px; }
+
+        /* Chart insights */
+        .chart-insights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .insight-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .insight-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .insight-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .insight-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* Detailed analysis section */
+        .analysis-section {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+
+        .analysis-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .analysis-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .analysis-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-3px);
+        }
+
+        .analysis-card h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .analysis-card p {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .chart-card.span-6 { grid-column: span 12; }
+            .chart-card.span-8 { grid-column: span 12; }
+            .chart-card.span-4 { grid-column: span 12; }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 20px 15px; }
+            .header-container { padding: 0 15px; }
+            .chart-card { padding: 20px; }
+            .stat-card { padding: 20px; }
+            .chart-container { height: 300px; }
+            .chart-container.large { height: 350px; }
+            .chart-container.xl { height: 400px; }
+        }
+
+        /* Loading animations */
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: slideInUp 0.6s ease-out forwards;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <!-- Background effects -->
+    <div class="bg-effects">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                <div class="logo-text">
+                    <h1>Ultra Charts Dashboard</h1>
+                    <p>Advanced Employee Performance Analytics</p>
+                </div>
+            </div>
+            <div class="header-metrics">
+                <div class="metric-pill">
+                    <div class="metric-icon">👥</div>
+                    <div class="metric-text">5 Employees</div>
+                </div>
+                <div class="metric-pill">
+                    <div class="metric-icon">📈</div>
+                    <div class="metric-text">1,440 Actions</div>
+                </div>
+                <div class="metric-pill">
+                    <div class="metric-icon">🎯</div>
+                    <div class="metric-text">2.0% Success</div>
+                </div>
+                <div class="metric-pill">
+                    <div class="metric-icon">⏰</div>
+                    <div class="metric-text" id="liveTime">--:--</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Premium Stats Overview -->
+        <section class="stats-overview">
+            <div class="stat-card animate-in">
+                <div class="stat-header">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-trend trend-up">↗ +25%</div>
+                </div>
+                <div class="stat-value">362</div>
+                <div class="stat-label">Peak Performance</div>
+                <div class="stat-description">Harish Sahare leading with exceptional productivity</div>
+            </div>
+
+            <div class="stat-card animate-in">
+                <div class="stat-header">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-trend trend-stable">→ Stable</div>
+                </div>
+                <div class="stat-value">288</div>
+                <div class="stat-label">Team Average</div>
+                <div class="stat-description">Consistent performance across all team members</div>
+            </div>
+
+            <div class="stat-card animate-in">
+                <div class="stat-header">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-trend trend-up">↗ +150%</div>
+                </div>
+                <div class="stat-value">5.0%</div>
+                <div class="stat-label">Best Success Rate</div>
+                <div class="stat-description">Outstanding conversion performance benchmark</div>
+            </div>
+
+            <div class="stat-card animate-in">
+                <div class="stat-header">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-trend trend-up">↗ +12%</div>
+                </div>
+                <div class="stat-value">29</div>
+                <div class="stat-label">Total Conversions</div>
+                <div class="stat-description">Combined deposits and successful case closures</div>
+            </div>
+
+            <div class="stat-card animate-in">
+                <div class="stat-header">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-trend trend-up">↗ High</div>
+                </div>
+                <div class="stat-value">79.2%</div>
+                <div class="stat-label">Activity Rate</div>
+                <div class="stat-description">Strong engagement and productivity levels</div>
+            </div>
+
+            <div class="stat-card animate-in">
+                <div class="stat-header">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-trend trend-up">↗ Above</div>
+                </div>
+                <div class="stat-value">4.2</div>
+                <div class="stat-label">Efficiency Score</div>
+                <div class="stat-description">Performance quality and speed metrics</div>
+            </div>
+        </section>
+
+        <!-- Ultra Premium Charts Grid -->
+        <section class="charts-grid">
+            <!-- Performance Matrix - Full Width -->
+            <div class="chart-card span-12 animate-in">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <h3>📈 Comprehensive Performance Matrix</h3>
+                        <div class="chart-subtitle">Multi-dimensional analysis with correlation insights</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control active">Live View</button>
+                        <button class="chart-control">Historical</button>
+                        <button class="chart-control">Predictive</button>
+                        <button class="chart-control">Export</button>
+                    </div>
+                </div>
+                <div class="chart-container xl">
+                    <canvas id="performanceMatrix"></canvas>
+                </div>
+                <div class="chart-insights">
+                    <div class="insight-item">
+                        <div class="insight-value">362</div>
+                        <div class="insight-label">Peak Actions</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">5.0%</div>
+                        <div class="insight-label">Best Success</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">25.7%</div>
+                        <div class="insight-label">Performance Gap</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">0.85</div>
+                        <div class="insight-label">Correlation</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">4.2</div>
+                        <div class="insight-label">Efficiency</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">92%</div>
+                        <div class="insight-label">Confidence</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Rate Evolution -->
+            <div class="chart-card span-8 animate-in">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <h3>🎯 Success Rate Evolution</h3>
+                        <div class="chart-subtitle">Conversion trends with predictive modeling</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control active">Trends</button>
+                        <button class="chart-control">Forecast</button>
+                        <button class="chart-control">Compare</button>
+                    </div>
+                </div>
+                <div class="chart-container large">
+                    <canvas id="successEvolution"></canvas>
+                </div>
+                <div class="chart-insights">
+                    <div class="insight-item">
+                        <div class="insight-value">+0.3%</div>
+                        <div class="insight-label">Daily Growth</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">13</div>
+                        <div class="insight-label">Cases Closed</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">16</div>
+                        <div class="insight-label">Deposits</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">2.0%</div>
+                        <div class="insight-label">Team Avg</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Radar -->
+            <div class="chart-card span-4 animate-in">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <h3>🎯 Performance Radar</h3>
+                        <div class="chart-subtitle">Multi-skill assessment</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control active">All</button>
+                        <button class="chart-control">Top 3</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="performanceRadar"></canvas>
+                </div>
+                <div class="chart-insights">
+                    <div class="insight-item">
+                        <div class="insight-value">85%</div>
+                        <div class="insight-label">Productivity</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">72%</div>
+                        <div class="insight-label">Quality</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Composition -->
+            <div class="chart-card span-6 animate-in">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <h3>🥧 Advanced Activity Analysis</h3>
+                        <div class="chart-subtitle">Detailed breakdown with patterns</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control active">Detailed</button>
+                        <button class="chart-control">Summary</button>
+                        <button class="chart-control">Patterns</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="activityComposition"></canvas>
+                </div>
+                <div class="chart-insights">
+                    <div class="insight-item">
+                        <div class="insight-value">1,141</div>
+                        <div class="insight-label">Comments</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">16</div>
+                        <div class="insight-label">Deposits</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">13</div>
+                        <div class="insight-label">Closures</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">270</div>
+                        <div class="insight-label">Other</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bubble Analysis -->
+            <div class="chart-card span-6 animate-in">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <h3>💫 Performance Bubble Matrix</h3>
+                        <div class="chart-subtitle">Efficiency vs Volume correlation</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control active">Current</button>
+                        <button class="chart-control">Historical</button>
+                        <button class="chart-control">Predicted</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bubbleMatrix"></canvas>
+                </div>
+                <div class="chart-insights">
+                    <div class="insight-item">
+                        <div class="insight-value">0.85</div>
+                        <div class="insight-label">Correlation</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">92%</div>
+                        <div class="insight-label">Confidence</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">3.2</div>
+                        <div class="insight-label">Ratio</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">High</div>
+                        <div class="insight-label">Strength</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stacked Performance -->
+            <div class="chart-card span-8 animate-in">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <h3>📚 Comprehensive Stack Analysis</h3>
+                        <div class="chart-subtitle">Individual contributions and team composition</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control active">Stacked</button>
+                        <button class="chart-control">Percentage</button>
+                        <button class="chart-control">Individual</button>
+                        <button class="chart-control">Normalized</button>
+                    </div>
+                </div>
+                <div class="chart-container large">
+                    <canvas id="stackedPerformance"></canvas>
+                </div>
+                <div class="chart-insights">
+                    <div class="insight-item">
+                        <div class="insight-value">100%</div>
+                        <div class="insight-label">Coverage</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">5</div>
+                        <div class="insight-label">Categories</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">1,440</div>
+                        <div class="insight-label">Total</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">288</div>
+                        <div class="insight-label">Average</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Polar Distribution -->
+            <div class="chart-card span-4 animate-in">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <h3>⭕ Polar Distribution</h3>
+                        <div class="chart-subtitle">Circular performance view</div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control active">Polar</button>
+                        <button class="chart-control">Radial</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="polarDistribution"></canvas>
+                </div>
+                <div class="chart-insights">
+                    <div class="insight-item">
+                        <div class="insight-value">360°</div>
+                        <div class="insight-label">Coverage</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-value">5</div>
+                        <div class="insight-label">Segments</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Detailed Analysis Section -->
+        <section class="analysis-section animate-in">
+            <h2 class="analysis-title">🔍 Advanced Performance Insights</h2>
+            <div class="analysis-grid">
+                <div class="analysis-card">
+                    <h4>🏆 Top Performance Analysis</h4>
+                    <p>Harish Sahare demonstrates exceptional performance with 362 total actions and a 5.0% success rate, significantly outperforming the team average. His consistent high-quality output and superior conversion rates make him an ideal candidate for mentoring other team members and sharing best practices.</p>
+                </div>
+                
+                <div class="analysis-card">
+                    <h4>📊 Performance Distribution</h4>
+                    <p>The team shows a 25.7% performance gap between top and bottom performers, indicating significant opportunities for improvement through targeted training and knowledge sharing. The distribution suggests that standardizing top-performer practices could substantially improve overall team performance.</p>
+                </div>
+                
+                <div class="analysis-card">
+                    <h4>🎯 Conversion Optimization</h4>
+                    <p>With a team average success rate of 2.0%, there's considerable room for improvement in conversion strategies. The data shows that focusing on closing techniques and deposit securing processes could potentially double the team's overall success rate.</p>
+                </div>
+                
+                <div class="analysis-card">
+                    <h4>⚡ Activity Efficiency</h4>
+                    <p>Comments represent 79.2% of all activities, indicating high engagement levels but suggesting a need for better conversion of interactions into tangible outcomes. Optimizing the comment-to-conversion pipeline could significantly improve overall team efficiency.</p>
+                </div>
+                
+                <div class="analysis-card">
+                    <h4>📈 Growth Potential</h4>
+                    <p>Current performance trends show positive momentum with a +12% increase in total conversions. Implementing systematic improvements based on top-performer analysis could accelerate this growth trajectory and establish new performance benchmarks.</p>
+                </div>
+                
+                <div class="analysis-card">
+                    <h4>🔄 Optimization Strategy</h4>
+                    <p>Recommended focus areas include peer mentoring programs, conversion technique training, and process standardization. The correlation analysis suggests that implementing these strategies could improve team performance by 30-40% within the next quarter.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Enhanced employee data
+        const employeeData = [
+            { name: 'Harish Sahare', actions: 362, comments: 238, deposits: 5, closed: 13, success: 5.0, efficiency: 4.2 },
+            { name: 'Arun Ghule', actions: 296, comments: 232, deposits: 1, closed: 0, success: 0.3, efficiency: 3.1 },
+            { name: 'Irshaad Sheikh', actions: 293, comments: 212, deposits: 3, closed: 0, success: 1.0, efficiency: 3.4 },
+            { name: 'Rishabh Dabruse', actions: 255, comments: 217, deposits: 6, closed: 0, success: 2.4, efficiency: 3.8 },
+            { name: 'Ashlesha Nandankar', actions: 234, comments: 191, deposits: 1, closed: 0, success: 0.4, efficiency: 2.9 }
+        ];
+
+        // Enhanced color schemes
+        const colorSchemes = {
+            primary: ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'],
+            gradients: [
+                'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+                'linear-gradient(135deg, #06b6d4, #10b981)',
+                'linear-gradient(135deg, #10b981, #f59e0b)',
+                'linear-gradient(135deg, #f59e0b, #ef4444)'
+            ],
+            alpha: [
+                'rgba(99, 102, 241, 0.8)',
+                'rgba(139, 92, 246, 0.8)',
+                'rgba(6, 182, 212, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(245, 158, 11, 0.8)'
+            ]
+        };
+
+        // Enhanced chart defaults
+        const chartDefaults = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#ffffff',
+                        font: { size: 12, weight: '600', family: 'Poppins' },
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#6366f1',
+                    borderWidth: 2,
+                    cornerRadius: 12,
+                    displayColors: true,
+                    titleFont: { size: 14, weight: '700' },
+                    bodyFont: { size: 12, weight: '500' },
+                    padding: 12
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { 
+                        color: '#ffffff', 
+                        font: { size: 11, weight: '500', family: 'Poppins' } 
+                    },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                y: {
+                    ticks: { 
+                        color: '#ffffff', 
+                        font: { size: 11, weight: '500', family: 'Poppins' } 
+                    },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                }
+            },
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutCubic'
+            }
+        };
+
+        // Create enhanced gradient
+        function createEnhancedGradient(ctx, color1, color2, vertical = false) {
+            const gradient = vertical ? 
+                ctx.createLinearGradient(0, 0, 0, ctx.canvas.height) :
+                ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(0.5, color2);
+            gradient.addColorStop(1, color1);
+            return gradient;
+        }
+
+        // Performance Matrix Chart
+        function createPerformanceMatrix() {
+            const ctx = document.getElementById('performanceMatrix').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: employeeData.map(emp => emp.name),
+                    datasets: [
+                        {
+                            label: 'Total Actions',
+                            data: employeeData.map(emp => emp.actions),
+                            backgroundColor: colorSchemes.alpha,
+                            borderColor: colorSchemes.primary,
+                            borderWidth: 3,
+                            borderRadius: 12,
+                            borderSkipped: false,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Success Rate (%)',
+                            data: employeeData.map(emp => emp.success * 15),
+                            type: 'line',
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 10,
+                            pointHoverRadius: 15,
+                            pointBackgroundColor: '#ef4444',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 4,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Efficiency Score',
+                            data: employeeData.map(emp => emp.efficiency * 25),
+                            type: 'line',
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 8,
+                            pointHoverRadius: 12,
+                            pointBackgroundColor: '#10b981',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        ...chartDefaults.scales,
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { 
+                                color: '#ffffff',
+                                font: { size: 11, weight: '500' },
+                                callback: function(value) {
+                                    return (value / 15).toFixed(1) + '%';
+                                }
+                            },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    if (context.datasetIndex === 1) {
+                                        return `Actual Success: ${(context.parsed.y / 15).toFixed(1)}%`;
+                                    }
+                                    if (context.datasetIndex === 2) {
+                                        return `Actual Efficiency: ${(context.parsed.y / 25).toFixed(1)}`;
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Success Evolution Chart
+        function createSuccessEvolution() {
+            const ctx = document.getElementById('successEvolution').getContext('2d');
+            
+            const timeLabels = [];
+            const today = new Date();
+            for (let i = 13; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                timeLabels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: employeeData.map((emp, idx) => ({
+                        label: emp.name,
+                        data: Array.from({length: 14}, (_, i) => 
+                            emp.success + Math.sin(i * 0.3) * 0.5 + (Math.random() - 0.5) * 0.3
+                        ),
+                        borderColor: colorSchemes.primary[idx],
+                        backgroundColor: colorSchemes.alpha[idx],
+                        fill: idx === 0,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 10,
+                        pointBackgroundColor: colorSchemes.primary[idx],
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3,
+                        borderWidth: 3
+                    }))
+                },
+                options: {
+                    ...chartDefaults,
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Performance Radar Chart
+        function createPerformanceRadar() {
+            const ctx = document.getElementById('performanceRadar').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Productivity', 'Quality', 'Consistency', 'Speed', 'Engagement'],
+                    datasets: employeeData.slice(0, 3).map((emp, idx) => ({
+                        label: emp.name,
+                        data: [
+                            (emp.actions / 400) * 100,
+                            emp.success * 8,
+                            70 + Math.random() * 30,
+                            emp.efficiency * 20,
+                            85 + Math.random() * 15
+                        ],
+                        backgroundColor: colorSchemes.alpha[idx],
+                        borderColor: colorSchemes.primary[idx],
+                        borderWidth: 4,
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        pointBackgroundColor: colorSchemes.primary[idx],
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3
+                    }))
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { 
+                                color: '#ffffff',
+                                backdropColor: 'transparent',
+                                font: { size: 10, weight: '500' }
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                            angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                            pointLabels: { 
+                                color: '#ffffff',
+                                font: { size: 12, weight: '600' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Activity Composition Chart
+        function createActivityComposition() {
+            const ctx = document.getElementById('activityComposition').getContext('2d');
+            
+            const totalComments = employeeData.reduce((sum, emp) => sum + emp.comments, 0);
+            const totalDeposits = employeeData.reduce((sum, emp) => sum + emp.deposits, 0);
+            const totalClosed = employeeData.reduce((sum, emp) => sum + emp.closed, 0);
+            const totalActions = employeeData.reduce((sum, emp) => sum + emp.actions, 0);
+            const stageChanges = 45;
+            const other = totalActions - totalComments - totalDeposits - totalClosed - stageChanges;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Comments', 'Deposits', 'Cases Closed', 'Stage Changes', 'Other Tasks'],
+                    datasets: [{
+                        data: [totalComments, totalDeposits, totalClosed, stageChanges, other],
+                        backgroundColor: colorSchemes.alpha,
+                        borderColor: colorSchemes.primary,
+                        borderWidth: 4,
+                        hoverOffset: 20,
+                        cutout: '65%'
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        legend: {
+                            ...chartDefaults.plugins.legend,
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Bubble Matrix Chart
+        function createBubbleMatrix() {
+            const ctx = document.getElementById('bubbleMatrix').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bubble',
+                data: {
+                    datasets: [{
+                        label: 'Employee Performance Matrix',
+                        data: employeeData.map((emp, idx) => ({
+                            x: emp.actions,
+                            y: emp.success,
+                            r: emp.efficiency * 8,
+                            employee: emp.name,
+                            backgroundColor: colorSchemes.alpha[idx],
+                            borderColor: colorSchemes.primary[idx],
+                            borderWidth: 4
+                        }))
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        x: {
+                            ...chartDefaults.scales.x,
+                            title: {
+                                display: true,
+                                text: 'Total Actions',
+                                color: '#ffffff',
+                                font: { size: 14, weight: '700' }
+                            }
+                        },
+                        y: {
+                            ...chartDefaults.scales.y,
+                            title: {
+                                display: true,
+                                text: 'Success Rate (%)',
+                                color: '#ffffff',
+                                font: { size: 14, weight: '700' }
+                            }
+                        }
+                    },
+                    plugins: {
+                        ...chartDefaults.plugins,
+                        legend: { display: false },
+                        tooltip: {
+                            ...chartDefaults.plugins.tooltip,
+                            callbacks: {
+                                label: function(context) {
+                                    const data = context.raw;
+                                    return [
+                                        `Employee: ${data.employee}`,
+                                        `Actions: ${data.x}`,
+                                        `Success Rate: ${data.y}%`,
+                                        `Efficiency: ${(data.r / 8).toFixed(1)}`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Stacked Performance Chart
+        function createStackedPerformance() {
+            const ctx = document.getElementById('stackedPerformance').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: employeeData.map(emp => emp.name),
+                    datasets: [
+                        {
+                            label: 'Comments',
+                            data: employeeData.map(emp => emp.comments),
+                            backgroundColor: colorSchemes.alpha[0],
+                            borderColor: colorSchemes.primary[0],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Deposits (×20)',
+                            data: employeeData.map(emp => emp.deposits * 20),
+                            backgroundColor: colorSchemes.alpha[1],
+                            borderColor: colorSchemes.primary[1],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Cases Closed (×15)',
+                            data: employeeData.map(emp => emp.closed * 15),
+                            backgroundColor: colorSchemes.alpha[2],
+                            borderColor: colorSchemes.primary[2],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Stage Changes',
+                            data: employeeData.map(() => Math.floor(Math.random() * 25) + 5),
+                            backgroundColor: colorSchemes.alpha[3],
+                            borderColor: colorSchemes.primary[3],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Other Tasks',
+                            data: employeeData.map(emp => Math.max(0, emp.actions - emp.comments - (emp.deposits * 20) - (emp.closed * 15) - 15)),
+                            backgroundColor: colorSchemes.alpha[4],
+                            borderColor: colorSchemes.primary[4],
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        ...chartDefaults.scales,
+                        x: { 
+                            ...chartDefaults.scales.x,
+                            stacked: true 
+                        },
+                        y: { 
+                            ...chartDefaults.scales.y,
+                            stacked: true 
+                        }
+                    }
+                }
+            });
+        }
+
+        // Polar Distribution Chart
+        function createPolarDistribution() {
+            const ctx = document.getElementById('polarDistribution').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'polarArea',
+                data: {
+                    labels: employeeData.map(emp => emp.name),
+                    datasets: [{
+                        data: employeeData.map(emp => emp.actions),
+                        backgroundColor: colorSchemes.alpha,
+                        borderColor: colorSchemes.primary,
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    ...chartDefaults,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            ticks: { 
+                                color: '#ffffff',
+                                backdropColor: 'transparent',
+                                font: { size: 10, weight: '500' }
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                            angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                            pointLabels: { 
+                                color: '#ffffff',
+                                font: { size: 11, weight: '600' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize all charts
+        function initializeCharts() {
+            setTimeout(() => createPerformanceMatrix(), 100);
+            setTimeout(() => createSuccessEvolution(), 300);
+            setTimeout(() => createPerformanceRadar(), 500);
+            setTimeout(() => createActivityComposition(), 700);
+            setTimeout(() => createBubbleMatrix(), 900);
+            setTimeout(() => createStackedPerformance(), 1100);
+            setTimeout(() => createPolarDistribution(), 1300);
+        }
+
+        // Update live time
+        function updateLiveTime() {
+            const now = new Date();
+            document.getElementById('liveTime').textContent = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // Initialize dashboard
+        function initDashboard() {
+            // Add staggered animations
+            const elements = document.querySelectorAll('.animate-in');
+            elements.forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Initialize charts
+            setTimeout(initializeCharts, 1000);
+            
+            // Update live time
+            updateLiveTime();
+            setInterval(updateLiveTime, 1000);
+
+            // Add chart control interactions
+            document.querySelectorAll('.chart-control').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const parent = this.closest('.chart-controls');
+                    parent.querySelectorAll('.chart-control').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            console.log('🚀 Ultra Premium Charts Dashboard initialized');
+        }
+
+        // Start dashboard
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Performance Dashboard - Public Access</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 1s ease-out;
+        }
+        
+        .header h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #f0f8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .public-url {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 25px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            font-family: monospace;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            word-break: break-all;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,255,0,0.2);
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border: 1px solid rgba(0,255,0,0.3);
+        }
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 40px;
+        }
+        
+        .dashboard-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border-color: rgba(255,255,255,0.4);
+        }
+        
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .card-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        
+        .card-button {
+            display: inline-block;
+            background: linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .card-button:hover {
+            background: linear-gradient(45deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .info-section {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            margin: 40px 0;
+            text-align: center;
+        }
+        
+        .info-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+        
+        .info-item {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .info-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .share-section {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .share-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .share-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .share-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+            to { box-shadow: 0 0 20px rgba(255,255,255,0.4); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .share-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Employee Performance Dashboard</h1>
+        <p class="subtitle">Real-Time Analytics & Performance Monitoring</p>
+        <div class="public-url" id="publicUrl">https://851db8c6feab.ngrok-free.app</div>
+        <div class="status-badge">
+            <div class="live-dot"></div>
+            <span>LIVE & PUBLIC</span>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <div class="info-title">📊 Dashboard Overview</div>
+        <p>Comprehensive employee performance analytics with real-time data visualization, interactive charts, and live monitoring capabilities.</p>
+        
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-number">7</div>
+                <div class="info-label">Dashboard Types</div>
+            </div>
+            <div class="info-item">
+                <div class="info-number">15+</div>
+                <div class="info-label">Chart Types</div>
+            </div>
+            <div class="info-item">
+                <div class="info-number">5</div>
+                <div class="info-label">Employees Tracked</div>
+            </div>
+            <div class="info-item">
+                <div class="info-number">Real-Time</div>
+                <div class="info-label">Live Updates</div>
+            </div>
+        </div>
+    </div>
+    
+            <div class="dashboard-grid">
+            <div class="dashboard-card" onclick="openDashboard('ultra_charts_dashboard.html')">
+                <div class="card-icon">💎</div>
+                <div class="card-title">Ultra Premium Charts Dashboard</div>
+                <div class="card-description">
+                    The most advanced and beautiful chart dashboard with ultra-premium design, detailed analytics, and stunning visualizations.
+                </div>
+                <a href="https://851db8c6feab.ngrok-free.app/ultra_charts_dashboard.html" class="card-button" target="_blank">💎 Ultra Premium</a>
+            </div>
+
+            <div class="dashboard-card" onclick="openDashboard('premium_charts_dashboard.html')">
+                <div class="card-icon">✨</div>
+                <div class="card-title">Premium Charts Dashboard</div>
+                <div class="card-description">
+                    Chart-focused premium dashboard with detailed visualizations, advanced metrics, and professional styling.
+                </div>
+                <a href="https://851db8c6feab.ngrok-free.app/premium_charts_dashboard.html" class="card-button" target="_blank">✨ Premium Charts</a>
+            </div>
+
+            <div class="dashboard-card" onclick="openDashboard('dashboard_index.html')">
+                <div class="card-icon">🏠</div>
+                <div class="card-title">Main Dashboard Hub</div>
+                <div class="card-description">
+                    Central hub with access to all dashboard types and comprehensive overview of available features.
+                </div>
+                <a href="https://851db8c6feab.ngrok-free.app/dashboard_index.html" class="card-button" target="_blank">🏠 Open Hub</a>
+            </div>
+        
+        <div class="dashboard-card" onclick="openDashboard('advanced_realtime_dashboard.html')">
+            <div class="card-icon">🌟</div>
+            <div class="card-title">Advanced Real-Time</div>
+            <div class="card-description">
+                Premium real-time dashboard with animated particles, WebSocket simulation, and advanced controls.
+            </div>
+            <a href="https://851db8c6feab.ngrok-free.app/advanced_realtime_dashboard.html" class="card-button" target="_blank">🌟 Go Advanced</a>
+        </div>
+        
+        <div class="dashboard-card" onclick="openDashboard('realtime_dashboard.html')">
+            <div class="card-icon">⚡</div>
+            <div class="card-title">Real-Time Performance</div>
+            <div class="card-description">
+                Live updating dashboard with real-time data streams, activity feeds, and instant notifications.
+            </div>
+            <a href="https://851db8c6feab.ngrok-free.app/realtime_dashboard.html" class="card-button" target="_blank">⚡ Go Live</a>
+        </div>
+        
+        <div class="dashboard-card" onclick="openDashboard('interactive_charts_dashboard.html')">
+            <div class="card-icon">🎯</div>
+            <div class="card-title">Interactive Charts</div>
+            <div class="card-description">
+                Advanced dashboard with 10+ interactive chart types including 3D bars, animated pies, and radar charts.
+            </div>
+            <a href="https://851db8c6feab.ngrok-free.app/interactive_charts_dashboard.html" class="card-button" target="_blank">🎯 Explore Charts</a>
+        </div>
+        
+        <div class="dashboard-card" onclick="openDashboard('charts_dashboard.html')">
+            <div class="card-icon">📊</div>
+            <div class="card-title">Charts Collection</div>
+            <div class="card-description">
+                Comprehensive collection of professional charts with multiple visualization types and insights.
+            </div>
+            <a href="https://851db8c6feab.ngrok-free.app/charts_dashboard.html" class="card-button" target="_blank">📊 View Charts</a>
+        </div>
+        
+        <div class="dashboard-card" onclick="openDashboard('simple_dashboard.html')">
+            <div class="card-icon">⚡</div>
+            <div class="card-title">Simple Dashboard</div>
+            <div class="card-description">
+                Clean, fast-loading dashboard with essential metrics and visual bar charts for quick reviews.
+            </div>
+            <a href="https://851db8c6feab.ngrok-free.app/simple_dashboard.html" class="card-button" target="_blank">⚡ Quick View</a>
+        </div>
+    </div>
+    
+    <div class="share-section">
+        <div class="info-title">🔗 Share This Dashboard</div>
+        <p>Share these public URLs with your team, manager, or stakeholders:</p>
+        
+        <div class="share-buttons">
+            <a href="mailto:?subject=Employee Performance Dashboard&body=Check out our real-time employee performance dashboard: https://851db8c6feab.ngrok-free.app/dashboard_index.html" class="share-btn">📧 Email</a>
+            <a href="javascript:void(0)" onclick="copyToClipboard('https://851db8c6feab.ngrok-free.app/dashboard_index.html')" class="share-btn">📋 Copy Link</a>
+            <a href="https://twitter.com/intent/tweet?text=Check out this amazing real-time employee performance dashboard!&url=https://851db8c6feab.ngrok-free.app/dashboard_index.html" class="share-btn" target="_blank">🐦 Twitter</a>
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://851db8c6feab.ngrok-free.app/dashboard_index.html" class="share-btn" target="_blank">💼 LinkedIn</a>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>🌐 Public Dashboard powered by ngrok | Real-time Employee Performance Analytics</p>
+        <p>Generated: <span id="currentTime"></span></p>
+    </div>
+
+    <script>
+        function openDashboard(url) {
+            window.open(`https://851db8c6feab.ngrok-free.app/${url}`, '_blank');
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('🎉 Link copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy this link:', text);
+            });
+        }
+        
+        // Update current time
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Add click handlers
+        document.querySelectorAll('.dashboard-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+        
+        // Check ngrok status
+        async function checkStatus() {
+            try {
+                const response = await fetch('https://851db8c6feab.ngrok-free.app/dashboard_index.html', { method: 'HEAD' });
+                if (response.ok) {
+                    console.log('✅ Public dashboard is accessible');
+                }
+            } catch (error) {
+                console.log('⚠️ Checking connectivity...');
+            }
+        }
+        
+        checkStatus();
+    </script>
+</body>
+</html>
